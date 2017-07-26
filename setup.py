@@ -6,7 +6,7 @@ def readme():
 
 setup(name='rap',
 	version='0.1',
-	description='The funniest joke in the world',
+	description='KAM',
 	url='http://github.com/storborg/funniest',
 	author='mdaal',
 	author_email='',

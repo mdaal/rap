@@ -1,4 +1,5 @@
 from .loop import loop
+from .thermometry import thermometry
 from ..metadata import metadata
 
 
