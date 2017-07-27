@@ -856,6 +856,7 @@ class sweep():
 	# 	del(self.loop)
 	# 	self.loop = loop()
 
+
 	# 	# use "with" context manage to ensure file is always closed. no need for fileh.close()
 	# 	with tables.open_file(filename, mode = wmode) as fileh:
 	# 		table = fileh.get_node(tablepath)	
@@ -868,13 +869,13 @@ class sweep():
 	# 				exec('self.metadata.{0} = None'.format(data))
 	# 	self.sweep_data_columns = self.Sweep_Array.dtype
 
-	# def pick_loop(self,index):
-	# 	'''Use this function to pick the current loop/transmission data from withing the Sweep_Array. 
-	# 	Index is the indes number of sweep/loop to be slected as the current loop.'''
-	# 	self.loop.index = index 
-	# 	#self.loop.normalization = None
-	# 	self.loop.z = self.Sweep_Array[index]['S21']
-	# 	self.loop.freq = self.Sweep_Array[index]['Frequencies']
+	def pick_loop(self,index):
+		'''Use this function to pick the current loop/transmission data from withing the Sweep_Array. 
+		Index is the indes number of sweep/loop to be slected as the current loop.'''
+		self.loop.index = index 
+		#self.loop.normalization = None
+		self.loop.z = self.Sweep_Array[index]['S21']
+		self.loop.freq = self.Sweep_Array[index]['Frequencies']
 		
 	# def normalize_loop(self, base = 0, offset = 5):
 	# 	''' normalize loop so that mag(S21)< 1. determine normalization by averaging np.abs(S21[base:offset]).mean()
@@ -2404,7 +2405,6 @@ class sweep():
 	# 	else:
 	# 		return a
 
-
 	# def fit_system_calibration(self):
 	# 	'''compute chebyshev polynomial fits for  gain and noise values.
 	# 	save resulting polynomial coefficients list as:
@@ -2414,6 +2414,7 @@ class sweep():
 	# 	where x is [gain, Tn_m ,Tn_p]... 
 
 	# 	use numpy.polynomial.chebyshev.chebval to evaluate polynomial
+
 
 	# 	'''
 	# 	max_degree = 9
@@ -2884,6 +2885,7 @@ class sweep():
 	# 	'''
 	# 	cd = curve_parameter_dict
 	# 	sd = sweep_parameter_dict
+
 
 
 	# 	#delete previous metadata object
