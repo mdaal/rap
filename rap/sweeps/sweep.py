@@ -9,10 +9,11 @@ from .thermometry import thermometry
 
 ### subdirectory imports
 from data_management.utils import _read_scandata_from_file
-
+from data_management.utils import _download_data
 
 ### external packages
 import numpy as np
+
 
 
 
@@ -40,62 +41,16 @@ class sweep():
 		self.metadata.Data_Source = filename_or_path
 		#need to implment test swp._read_scandata_from_file('rap/sweeps/tests/49a_survey.mat')
 
-	# def _download_data(self, URL):
-	# 	''' Authenticats to URL containing data.
-	# 	Copies the .mat file licated at URL to a local file in local directory.
-	# 	.mat file is a Scan_Data matlab structure.
-	# 	returns numpy data structure contauning .mat file.
-	# 	deletes local file.'''
+	def _download_data(self, URL):
+		''' Authenticats to URL containing data.
+		Copies the .mat file licated at URL to a local file in local directory.
+		.mat file is a Scan_Data matlab structure.
+		returns numpy data structure contauning .mat file.
+		deletes local file.'''
 
-
-	# 	passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-	# 	# this creates a password manager
-	# 	passman.add_password(None, URL, username, password)
-	# 	# because we have put None at the start it will always
-	# 	# use this username/password combination for  urls
-	# 	# for which `URL` is a super-url
-
-	# 	authhandler = urllib2.HTTPBasicAuthHandler(passman)
-	# 	# create the AuthHandler
-
-	# 	opener = urllib2.build_opener(authhandler)
-
-	# 	urllib2.install_opener(opener)
-	# 	# All calls to urllib2.urlopen will now use our handler
-	# 	# Make sure not to include the protocol in with the URL, or
-	# 	# HTTPPasswordMgrWithDefaultRealm will be very confused.
-	# 	# You must (of course) use it when fetching the page though.
-
-	# 	pagehandle = urllib2.urlopen(URL)
-	# 	# authentication is now handled automatically for us
-
-	# 	#import tempfile # Attempt to download data into a temp file
-	# 	#f = tempfile.NamedTemporaryFile(delete=False)
-	# 	#f.write(pagehandle.read())
-	# 	#f.close()
-	# 	#mat = scipy.io.loadmat(f.name)
-
-	# 	output = open('test.mat','wb')
-	# 	print('Download Initiated...')
-	# 	output.write(pagehandle.read())
-	# 	print('Download Completed...')
-	# 	output.close()
-	# 	#global mat
-	# 	mat = scipy.io.loadmat('test.mat')
-
-	# 	#this id how to tell what variables are stored in test.mat
-	# 	#print scipy.io.whosmat('test.mat')
-
-
-
-	# 	#html = pagehandle.read()
-	# 	#pagehandle.close()
-
-	# 	#soup = BeautifulSoup(html)
-	# 	#soup.contents
-	# 	os.remove('test.mat')
-	# 	self.data = mat
-	# 	self.metadata.Data_Source = URL
+		# need to fix 'KIPs_Access.txt' 
+		self.data = _download_data(URL)
+		self.metadata.Data_Source = URL
 
 	# def plot_loop(self,  aspect='auto', show = True):
 	# 	''' Plots currently selected complex transmission in the I,Q plane. Reutrns a tuple, (fig, ax, line),
@@ -128,6 +83,10 @@ class sweep():
 	# 	if show == True:
 	# 		plt.show()
 	# 	return  (fig, ax, line)
+
+
+
+
 
 	# def plot_transmission(self, show = True):
 	# 	''' Plots currently selected complex transmission in dB as a function of frequency. Reutrns a tuple, (fig, ax, line),

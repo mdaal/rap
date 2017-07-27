@@ -1,6 +1,7 @@
 
 ### external imports
 import scipy.io #for loading .mat file
+import urllib2
 
 def _read_scandata_from_file(filename_or_path):
 		
@@ -9,7 +10,7 @@ def _read_scandata_from_file(filename_or_path):
 	return mat
 
 
-def _download_data(self, URL):
+def _download_data(URL):
 	''' Authenticats to URL containing data.
 	Copies the .mat file licated at URL to a local file in local directory.
 	.mat file is a Scan_Data matlab structure.
@@ -63,8 +64,8 @@ def _download_data(self, URL):
 	#soup = BeautifulSoup(html)
 	#soup.contents
 	os.remove('test.mat')
-	self.data = mat
-	self.metadata.Data_Source = URL
+	return mat
+	
 def _extract_type(self, obj, return_type = None, field = None):
 	'''scanandata object, obj, has a lot of single element arrays of arrays. this function gets the element.
 	e.g scandata may have [[[ele]]] instead of callling ele = scandata[0][0][0], use this function to get ele.
