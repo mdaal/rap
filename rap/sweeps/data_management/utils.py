@@ -1,17 +1,14 @@
-def _read_scandata_from_file(self,filename_or_path):
-		
-	# index = filename_or_path.rfind(os.sep)
-	# if index > -1: # filename_or_path is a path
-	# 	current_path = os.getcwd()
-	# 	os.chdir(filename_or_path[0:index])
-	# 	mat = scipy.io.loadmat(filename_or_path[index+1:])
-	# 	os.chdir(current_path)
-	# else: # filename_or_path is a filename
-	# 	mat = scipy.io.loadmat(filename_or_path)
 
+### external imports
+import scipy.io #for loading .mat file
+
+def _read_scandata_from_file(filename_or_path):
+		
 	mat = scipy.io.loadmat(filename_or_path)
-	self.data = mat
-	self.metadata.Data_Source = filename_or_path
+
+	return mat
+
+
 def _download_data(self, URL):
 	''' Authenticats to URL containing data.
 	Copies the .mat file licated at URL to a local file in local directory.

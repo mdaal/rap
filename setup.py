@@ -12,4 +12,5 @@ setup(name='rap',
 	author_email='',
 	license='MIT',
 	packages=['rap'],
+	install_requires=['numpy','scipy' ],
 	zip_safe=False)
