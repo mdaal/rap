@@ -1,4 +1,4 @@
-def save_hf5(self, filename = database_location, overwrite = False):
+def save_hf5(metadata filename = database_location, overwrite = False):
 	'''Saves current self.Sweep_Array into table contained in the hdf5 file speficied by filename.
 	If overwite = True, self.Sweep_Array will overwright whatever is previous table data there is.
 	'''
@@ -17,23 +17,23 @@ def save_hf5(self, filename = database_location, overwrite = False):
 		wmode = 'a'
 		
 	db_title = 'Aggregation of Selected Data Sets'
-	group_name = 'Run' + self.metadata.Run
-	group_title = self.metadata.Test_Location
+	group_name = 'Run' + metadata.Run
+	group_title = metadata.Test_Location
 
 
 	try:  # for forward compatabiliity with 75uW python DAQ
-		d = datetime.datetime.strptime(self.metadata.Measurement_Start_Time , '%Y%m%d%H%M')
+		d = datetime.datetime.strptime(metadata.Measurement_Start_Time , '%Y%m%d%H%M')
 	except:
 		pass
 
 	try:
 		# case for scan data date
-		d = datetime.datetime.strptime(self.metadata.Time_Created, '%B %d, %Y  %I:%M:%S.%f %p') # slightly wrong %f is microseconds. whereas we want milliseconds.
+		d = datetime.datetime.strptime(metadata.Time_Created, '%B %d, %Y  %I:%M:%S.%f %p') # slightly wrong %f is microseconds. whereas we want milliseconds.
 	except:
 		pass
 	try:
 		#Case for sonnet date
-		d = datetime.datetime.strptime(self.metadata.Time_Created, '%m/%d/%Y %H:%M:%S')
+		d = datetime.datetime.strptime(metadata.Time_Created, '%m/%d/%Y %H:%M:%S')
 	except:
 		pass
 	sweep_data_table_name = 'T' + d.strftime('%Y%m%d%H%M')
@@ -60,9 +60,9 @@ def save_hf5(self, filename = database_location, overwrite = False):
 		sweep_data_table.append(self.Sweep_Array)
 
 		# Save metadata
-		for data in self.metadata.__dict__.keys():
+		for data in metadata.__dict__.keys():
 			exec('sweep_data_table.attrs.{0} = self.metadata.{0}'.format(data))
-			if self.metadata.__dict__[data] == None:
+			if metadata.__dict__[data] == None:
 				print('table metadata {0} not defined and is set to None'.format(data))	
 
 		sweep_data_table.flush()	

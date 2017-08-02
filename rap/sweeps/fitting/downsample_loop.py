@@ -1,4 +1,6 @@
-def downsample_loop(self,N):
+def downsample_loop(N):
 	''' Reduce number of loop/freq data point by every Nth point and discarding all others'''
-	self.loop.z = self.loop.z[0:-1:N]
-	self.loop.freq = self.loop.freq[0:-1:N]
+	loop.z = loop.z[0:-1:N]
+	loop.freq =loop.freq[0:-1:N]
+	loop_downsample=[loop.z,loop.freq]
+	return loop_downsample

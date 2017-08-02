@@ -1,16 +1,10 @@
-def plot_transmission(self, show = True):
+def plot_transmission(IQ_points, metadata, show = True):
 		''' Plots currently selected complex transmission in dB as a function of frequency. Reutrns a tuple, (fig, ax, line),
 		where fig is the figure object, ax is the axes object and line is the line object for the plotted data.
 
 		*Must have a loop picked in order to use this function.*
 		'''
-		try: 
-			z = self.loop.z
-			freq = self.loop.freq
-		except:
-			print("Data not available. You probably forgot to load it.")
-			return
-
+		z  = IQ_points
 		plt.rcParams["axes.titlesize"] = 10
 		fig = plt.figure( figsize=(8, 6), dpi=100)
 		ax = fig.add_subplot(111)
@@ -18,7 +12,7 @@ def plot_transmission(self, show = True):
 		ax.set_xlabel('Frequency [Hz]')
 		ax.set_ylabel('$20*Log_{10}[|S_{21}|]$ [dB]')
 
-		ax.set_title('Run: {0}; Sensor: {1}; Ground: {2}; Record Date: {3}'.format(self.metadata.Run, self.metadata.Sensor, self.metadata.Ground_Plane, self.metadata.Time_Created))
+		ax.set_title('Run: {0}; Sensor: {1}; Ground: {2}; Record Date: {3}'.format(metadata.Run, metadata.Sensor, metadata.Ground_Plane, metadata.Time_Created))
 		if show == True:
 			plt.show()
 		return  (fig, ax, line)

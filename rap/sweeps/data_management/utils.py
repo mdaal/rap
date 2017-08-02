@@ -66,7 +66,7 @@ def _download_data(URL):
 	os.remove('test.mat')
 	return mat
 	
-def _extract_type(self, obj, return_type = None, field = None):
+def _extract_type(obj, return_type = None, field = None):
 	'''scanandata object, obj, has a lot of single element arrays of arrays. this function gets the element.
 	e.g scandata may have [[[ele]]] instead of callling ele = scandata[0][0][0], use this function to get ele.
 	if ele is another structured numpy array with field name 'myfield', using keyword field = 'myfield' will get
@@ -112,14 +112,15 @@ def _extract_type(self, obj, return_type = None, field = None):
 		# 	print('Field named {0} is not found. Returning None'.format(field))
 		obj = itemloop(obj)
 	return obj
-def _define_sweep_data_columns(self, fsteps, tpoints, list_only = False):
-	self.metadata.Fsteps = fsteps
-	self.metadata.Num_Temperatures  = tpoints
+def _define_sweep_data_columns(metadata, fsteps, tpoints):
+	''' Create the sweep_data_columns_list which is used to define the dtype of the  Sweep_Array'''
+	metadata.Fsteps = fsteps
+	metadata.Num_Temperatures  = tpoints
 
 	if tpoints < 1: # we dont want a shape = (0,) array. We want at least (1,)
 		tpoints = 1
 
-	self.sweep_data_columns_list = [
+	sweep_data_columns_list = [
 		("Fstart"         			, np.float64), # in Hz
 		("Fstop"          			, np.float64), # in Hz
 		("Heater_Voltage" 			, np.float64), # in Volts
@@ -162,10 +163,12 @@ def _define_sweep_data_columns(self, fsteps, tpoints, list_only = False):
 
 		#("S21_Processed"            , np.complex128, (fsteps,)), # Processed S21 used in phase fit 
 		]
-	if list_only == False:
-		self.sweep_data_columns = np.dtype(self.sweep_data_columns_list)
-def _define_sweep_array(self,index,**field_names):
+
+	return sweep_data_columns_list
+
+def _define_sweep_array(index,**field_names):
 	#for field_name in self.sweep_data_columns.fields.keys():
 	for field_name in field_names:
-		self.Sweep_Array[field_name][index] = field_names[field_name]
+		Sweep_Array[field_name][index] = field_names[field_name]
+	return Sweep_Array
 					

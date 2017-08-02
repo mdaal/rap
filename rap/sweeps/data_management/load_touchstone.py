@@ -1,4 +1,4 @@
-def load_touchstone(self,filename, pick_loop = True):
+def load_touchstone(metadata, filename, pick_loop = True):
 	''' The function loads S21 and Freq from  Sonnet .s2p or .s3p files into the Sweep_Array structured np array
 	All Sij are extracted, but only  S21 is saved into Sweep_Array. Future editions of this code might  find need 
 	to load other Sij becuase S21.
@@ -11,8 +11,8 @@ def load_touchstone(self,filename, pick_loop = True):
 	import io
 
 	#delete previous metadata object
-	del(self.metadata)
-	self.metadata = metadata()
+	del(metadata)
+	metadata = metadata()
 
 	dt_s2p = [('Freq', np.float64), ('S11r', np.float64), ('S11i', np.float64), ('S12r', np.float64), ('S12i', np.float64), 
 									('S21r', np.float64), ('S21i', np.float64), ('S22r', np.float64), ('S22i', np.float64)]
@@ -36,10 +36,10 @@ def load_touchstone(self,filename, pick_loop = True):
 				if line == '': # End of file is reached
 					break
 				elif line.startswith('! Data File Written:'): # Save as Metadata
-					self.metadata.Time_Created = str(line.split('! Data File Written:')[1].strip())
+					metadata.Time_Created = str(line.split('! Data File Written:')[1].strip())
 					tmp.write(line + '\n')
 				elif line.startswith('! From Project:') | line.startswith('! From Emgraph Data:'): # Save as Metadata
-					self.metadata.Run = str(line.split(':')[1].strip())
+					metadata.Run = str(line.split(':')[1].strip())
 					#self.metadata.IS_Sonnet_Simulation = True
 					tmp.write(line + '\n')
 				elif line[0] == '#':
@@ -100,9 +100,9 @@ def load_touchstone(self,filename, pick_loop = True):
 								)
 
 
-	self.metadata.Data_Source = filename
+	metadata.Data_Source = filename
 	#self.metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][:-1]-Touchstone_Data['Freq'][1:]).min()
-	self.metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][0] - Touchstone_Data['Freq'][-1])/Touchstone_Data['Freq'].size #use average freq resolution
+	metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][0] - Touchstone_Data['Freq'][-1])/Touchstone_Data['Freq'].size #use average freq resolution
 
 	if pick_loop == True: #since there is only one loop in Sweep_Array, we might as well pick it as the current loop
 		self.pick_loop(0)

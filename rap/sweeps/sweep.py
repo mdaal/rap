@@ -8,13 +8,65 @@ from .loop import loop
 from .thermometry import thermometry
 
 ### subdirectory imports
+
+### data_management
+from data_management.construct_hf5_toc import construct_hf5_toc
+from data_management.load_hf5 import load_hf5
+from data_management.load_hf5_2 import load_hf5_2
+from data_management.load_scandata import load_scandata
+from data_management.load_touchstone import load_touchstone
+from data_management.save_hf5 import save_hf5
 from data_management.utils import _read_scandata_from_file
 from data_management.utils import _download_data
+from data_management.utils import _extract_type
+from data_management.utils import _define_sweep_data_columns
+from data_management.utils import _define_sweep_array
 
+###------------------------------------------------------------
+### fitting
+from fitting.circle_fit import circle_fit
+from fitting.complete_fit import complete_fit
+from fitting.decompress_gain import decompress_gain
+from fitting.downsample_loop import downsample_loop
+from fitting.normalize_loop import normalize_loop
+from fitting.phase_fit import phase_fit
+from fitting.remove_cable_delay import remove_cable_delay
+from fitting.trim_loop import trim_loop
+from fitting.utils import _points_removed
+from fitting.utils import _angle
+
+from fitting.nonlinear.nonlinear_fit import nonlinear_fit
+from fitting.nonlinear.utils import _nonlinear_formulae
+
+###------------------------------------------------------------
+### simulation
+from simulation.generate_nonlinear_data import generate_nonlinear_data
+
+###------------------------------------------------------------
+### sweep_array
+from sweep_array.fill_sweep_array import fill_sweep_array
+from sweep_array.sweep_array_info import sweep_array_info
+
+###------------------------------------------------------------
+### systen_calibration
+
+from system_calibration.fit_cable_loss import fit_cable_loss
+from system_calibration.utils import _construct_readout_chain
+
+###------------------------------------------------------------
+### tests
+
+
+###------------------------------------------------------------
+### visualization 
+from visualization._save_fig_dec import _save_fig_dec
+from visualization.plot_loop import plot_loop
+from visualization.plot_transmission import plot_transmission
+
+###------------------------------------------------------------
 ### external packages
 import numpy as np
-
-
+import matplotlib.pyplot as plt
 
 
 class sweep():
@@ -52,533 +104,341 @@ class sweep():
 		self.data = _download_data(URL)
 		self.metadata.Data_Source = URL
 
-	# def plot_loop(self,  aspect='auto', show = True):
-	# 	''' Plots currently selected complex transmission in the I,Q plane. Reutrns a tuple, (fig, ax, line),
-	# 	where  fig is the figure object, ax is the axes object and line is the line object for the plotted data.
+	def plot_loop(self,  aspect='auto', show = True):
+		''' Plots currently selected complex transmission in the I,Q plane. Reutrns a tuple, (fig, ax, line),
+		where  fig is the figure object, ax is the axes object and line is the line object for the plotted data.
 
-	# 	aspect='equal' makes circles round, aspect='auto' fills the figure space.
+		aspect='equal' makes circles round, aspect='auto' fills the figure space.
 
-	# 	*Must have a loop picked in order to use this function.*
-	# 	'''
-	# 	try: 
-	# 		z = self.loop.z
-	# 	except:
-	# 		print("Data not available. You probably forgot to load it.")
-	# 		return
+		*Must have a loop picked in order to use this function.*
+		'''
+		try: 
+			z = self.loop.z
+		except:
+			print("Data not available. You probably forgot to load it.")
+			return
 
+		(fig, ax, line) = plot_loop(z, self.metadata,  aspect, show)
 
-	# 	fig = plt.figure( figsize=(6.5, 6.5), dpi=100)
-	# 	ax = fig.add_subplot(111,aspect=aspect)
-	# 	line, = ax.plot(z.real,z.imag,'bo')
-	# 	ax.set_xlabel(r'$\Re[S_{21}(f)]$')
-	# 	ax.set_ylabel(r'$\Im[S_{21}(f)]$')
-	# 	ax.yaxis.labelpad = -2
-	# 	ax.set_title('Run: {0}; Sensor: {1}; Ground: {2}; Record Date: {3}'.format(self.metadata.Run, self.metadata.Sensor, self.metadata.Ground_Plane, self.metadata.Time_Created),fontsize=10)
-		
+		return  (fig, ax, line)
 
 
 
 
 
-	# 	if show == True:
-	# 		plt.show()
-	# 	return  (fig, ax, line)
+	def plot_transmission(self, show = True):
+		''' Plots currently selected complex transmission in dB as a function of frequency. Reutrns a tuple, (fig, ax, line),
+		where fig is the figure object, ax is the axes object and line is the line object for the plotted data.
+
+		*Must have a loop picked in order to use this function.*
+		'''
+		try: 
+			z = self.loop.z
+			freq = self.loop.freq
+		except:
+			print("Data not available. You probably forgot to load it.")
+			return
+		(fig, ax, line)=plot_transmission(z,self.metadata,show)
+
+		return  (fig, ax, line)
+
+	def _extract_type(self, obj, return_type = None, field = None):
+		return _extract_type(obj, return_type = None, field = None)
+
+	def _define_sweep_data_columns(self, fsteps, tpoints, list_only = False):
+		self.sweep_data_columns_list = _define_sweep_data_columns(metadate, fsteps, tpoints)
+		if list_only == False:
+			self.sweep_data_columns = np.dtype(self.sweep_data_columns_list)
 
 
-
-
-
-	# def plot_transmission(self, show = True):
-	# 	''' Plots currently selected complex transmission in dB as a function of frequency. Reutrns a tuple, (fig, ax, line),
-	# 	where fig is the figure object, ax is the axes object and line is the line object for the plotted data.
-
-	# 	*Must have a loop picked in order to use this function.*
-	# 	'''
-	# 	try: 
-	# 		z = self.loop.z
-	# 		freq = self.loop.freq
-	# 	except:
-	# 		print("Data not available. You probably forgot to load it.")
-	# 		return
-
-	# 	plt.rcParams["axes.titlesize"] = 10
-	# 	fig = plt.figure( figsize=(8, 6), dpi=100)
-	# 	ax = fig.add_subplot(111)
-	# 	line = ax.plot(freq,20*np.log10(abs(z)),'b-',)
-	# 	ax.set_xlabel('Frequency [Hz]')
-	# 	ax.set_ylabel('$20*Log_{10}[|S_{21}|]$ [dB]')
-
-	# 	ax.set_title('Run: {0}; Sensor: {1}; Ground: {2}; Record Date: {3}'.format(self.metadata.Run, self.metadata.Sensor, self.metadata.Ground_Plane, self.metadata.Time_Created))
-	# 	if show == True:
-	# 		plt.show()
-	# 	return  (fig, ax, line)
-
-	# def _extract_type(self, obj, return_type = None, field = None):
-	# 	'''scanandata object, obj, has a lot of single element arrays of arrays. this function gets the element.
-	# 	e.g scandata may have [[[ele]]] instead of callling ele = scandata[0][0][0], use this function to get ele.
-	# 	if ele is another structured numpy array with field name 'myfield', using keyword field = 'myfield' will get
-	# 	the data at field.
-	# 	the function will cast ele to be in the data type return_typer. e.g. return_type = 'str' returns a string. 
-	# 	If return_type is None, ele is returned as whatever type it was saved as in [[[ele]]] '''
-		
-	# 	def cast(_obj):
-	# 		if (return_type is not None) & (_obj is not None) : #if (return_type != None) & (_obj != None) :
-	# 			_obj = return_type(_obj)
-	# 			#pass#exec("_obj = {0}(_obj)".format(return_type))
-	# 		return _obj
-
-	# 	def itemloop(_obj):
-	# 		while True:
-	# 			try:
-	# 				_obj = _obj.item()
-	# 			except:
-	# 				return cast(_obj)
-	# 		return cast(_obj)
-
-
-	# 	if field == None:
-	# 		obj = itemloop(obj)
-
-	# 	else:
-	# 		while obj.dtype == np.dtype('O'):
-	# 			obj = obj.item()
-				
-	# 		if isinstance(obj.item(), unicode): 
-	# 			obj = None
-	# 			print('Expected dictionary containing field named {0} is not found. Returning None'.format(field))				
-	# 		else: #if the object does not simply contain a string, e.g  [u'InP #2'], do this
-	# 			try:
-	# 				obj = obj[field]
-	# 			except:
-	# 				obj = None
-	# 				print('Field named {0} is not found. Returning None'.format(field))	
-	# 		# try:
-	# 		# 	obj = obj[field]
-	# 		# except:
-	# 		# 	obj = None
-	# 		# 	print('Field named {0} is not found. Returning None'.format(field))
-	# 		obj = itemloop(obj)
-	# 	return obj
-
-	# def _define_sweep_data_columns(self, fsteps, tpoints, list_only = False):
-	# 	self.metadata.Fsteps = fsteps
-	# 	self.metadata.Num_Temperatures  = tpoints
-
-	# 	if tpoints < 1: # we dont want a shape = (0,) array. We want at least (1,)
-	# 		tpoints = 1
-
-	# 	self.sweep_data_columns_list = [
-	# 		("Fstart"         			, np.float64), # in Hz
-	# 		("Fstop"          			, np.float64), # in Hz
-	# 		("Heater_Voltage" 			, np.float64), # in Volts
-	# 		("Pinput_dB"      			, np.float64), # in dB
-	# 		("Preadout_dB"     			, np.float64), # in dB  - The power at the input of the resonator, not inside the resonator
-	# 		("Thermometer_Voltage_Bias"	, np.float64), # in Volts
-	# 		("Temperature_Readings"    	, np.float64,(tpoints,)), # in Kelvin
-	# 		("Temperature"		    	, np.float64), # in Kelvin
-	# 		("S21"            			, np.complex128, (fsteps,)), # in complex numbers, experimental values.
-	# 		("Frequencies"    			, np.float64,(fsteps,)), # in Hz
-	# 		("Q"						, np.float64),
-	# 		("Qc"						, np.float64),
-	# 		("Fr"						, np.float64), # in Hz
-	# 		("Is_Valid"					, np.bool),
-	# 		("Chi_Squared"              , np.float64),
-	# 		("Mask"						, np.bool,(fsteps,)), # array mask selecting data used in phase fit
-	# 		("R"						, np.float64), #outer loop radius
-	# 		("r"						, np.float64), # resonance loop radius	
-	# 		("a"						, np.float64),	
-	# 		("b"						, np.float64),
-	# 		#("Normalization"			, np.float64),
-	# 		("Theta"					, np.float64),
-	# 		("Phi"						, np.float64),
-	# 		("cQ"						, np.float64),
-	# 		("cQc"						, np.float64),
-	# 		("cFr"						, np.float64), # in Hz
-	# 		("cIs_Valid"				, np.bool),
-	# 		("cChi_Squared"             , np.float64),
-	# 		("cPhi"						, np.float64),
-	# 		("cTheta"					, np.float64),
-	# 		("cR"						, np.float64),
-	# 		("sQ"						, np.float64),
-	# 		("sQc"						, np.float64),
-	# 		("sFr"						, np.float64), # in Hz
-	# 		("sIs_Valid"				, np.bool),
-	# 		("sChi_Squared"             , np.float64),
-	# 		("sPhi"						, np.float64),
-	# 		("sTheta"					, np.float64),
-	# 		("sR"						, np.float64),
-
-	# 		#("S21_Processed"            , np.complex128, (fsteps,)), # Processed S21 used in phase fit 
-	# 		]
-	# 	if list_only == False:
-	# 		self.sweep_data_columns = np.dtype(self.sweep_data_columns_list)
-
-	# def _define_sweep_array(self,index,**field_names):
-	# 	#for field_name in self.sweep_data_columns.fields.keys():
-	# 	for field_name in field_names:
-	# 		self.Sweep_Array[field_name][index] = field_names[field_name]
+	def _define_sweep_array(self,index,**field_names):
+		#for field_name in self.sweep_data_columns.fields.keys():
+		self.Sweep_Array=_define_sweep_array(index,**field_names)
 						
-	# def load_scandata(self, file_location):
-	# 	''' file_location is the locaiton of the scandata.mat file. It can be a URL, filename or /path/filename.
-	# 	assumes that self.data is in the form of matlab ScanData Structure'''
+	def load_scandata(self, file_location):
+		''' file_location is the locaiton of the scandata.mat file. It can be a URL, filename or /path/filename.
+		assumes that self.data is in the form of matlab ScanData Structure'''
 
-	# 	#delete previous metadata object
-	# 	del(self.metadata)
-	# 	self.metadata = metadata()
+		#delete previous metadata object
+		del(self.metadata)
+		self.metadata = metadata()
 
-	# 	if file_location.startswith('http'):
-	# 		self._download_data(file_location)
-	# 	else:
-	# 		self._read_scandata_from_file(file_location)
+		if file_location.startswith('http'):
+			self._download_data(file_location)
+		else:
+			self._read_scandata_from_file(file_location)
 
-	# 	ScanData = self.data['ScanData']
+		ScanData = self.data['ScanData']
 		
-	# 	# These tags specify the data to pull out of self.data['ScanData']. syntax is 
-	# 	# (field of self.data['ScanData'] to extract, self.metadata name to save to ('key:sub-key' ifself.metadata.key is a dict), 
-	# 	#			 type of value (arrays are None),optional sub-field of self.data['ScanData'] to extract)
-	# 	tags = [('Run','Run', str), ('Start_Date','Fridge_Run_Start_Date',str), ('Location','Test_Location', str), 
-	# 			('Sensor','Sensor',str), ('Ground_Plane','Ground_Plane',str), ('Box','Box',str), ('Press','Press',str), 
-	# 			('Notes','Notes',str),('Time','Time_Created',str),('Temperature','Fridge_Base_Temp',float),
-	# 			('Powers','Powers', None), ('Resolution','Min_Freq_Resolution', np.float), ('IFBW','IFBW', np.float),
-	# 			('Heater_Voltage','Heater_Voltage',None), ('Average_Factor','NA_Average_Factor', np.float), 
-	# 			('Minimum_Q','Minimum_Q', np.float), ('Range','Range',None), ('Added_Atten','Atten_Added_At_NA', np.float),  
-	# 			('Num_Points_Per_Scan','Num_Points_Per_Scan',np.float), ('Freq_Range', 'Freq_Range',None), 
-	# 			('Pause','Wait_Time',np.float), ('LNA', 'LNA:LNA', str), ('HEMT', 'LNA:Vg', str,'Vg'),
-	# 			('HEMT', 'LNA:Id', str,'Id'),  ('HEMT', 'LNA:Vd', str,'Vd'), ('Atten_4K', 'Atten_At_4K', np.float32),
-	# 			('Atten_NA_Output', 'Atten_NA_Output',np.float32), ('Atten_NA_Input','Atten_NA_Input',np.float32),
-	# 			('Atten_RTAmp_Input','Atten_RTAmp_Input',np.float32), ('RTAmp_In_Use', 'RTAmp_In_Use', int),
-	# 			('Elapsed_Time', 'Meaurement_Duration', np.float),('Thermometer_Configuration','Thermometer_Configuration',None),
-	# 			('Thermometer_Bias','Thermometer_Voltage_Bias', None)]
+		# These tags specify the data to pull out of self.data['ScanData']. syntax is 
+		# (field of self.data['ScanData'] to extract, self.metadata name to save to ('key:sub-key' ifself.metadata.key is a dict), 
+		#			 type of value (arrays are None),optional sub-field of self.data['ScanData'] to extract)
+		tags = [('Run','Run', str), ('Start_Date','Fridge_Run_Start_Date',str), ('Location','Test_Location', str), 
+				('Sensor','Sensor',str), ('Ground_Plane','Ground_Plane',str), ('Box','Box',str), ('Press','Press',str), 
+				('Notes','Notes',str),('Time','Time_Created',str),('Temperature','Fridge_Base_Temp',float),
+				('Powers','Powers', None), ('Resolution','Min_Freq_Resolution', np.float), ('IFBW','IFBW', np.float),
+				('Heater_Voltage','Heater_Voltage',None), ('Average_Factor','NA_Average_Factor', np.float), 
+				('Minimum_Q','Minimum_Q', np.float), ('Range','Range',None), ('Added_Atten','Atten_Added_At_NA', np.float),  
+				('Num_Points_Per_Scan','Num_Points_Per_Scan',np.float), ('Freq_Range', 'Freq_Range',None), 
+				('Pause','Wait_Time',np.float), ('LNA', 'LNA:LNA', str), ('HEMT', 'LNA:Vg', str,'Vg'),
+				('HEMT', 'LNA:Id', str,'Id'),  ('HEMT', 'LNA:Vd', str,'Vd'), ('Atten_4K', 'Atten_At_4K', np.float32),
+				('Atten_NA_Output', 'Atten_NA_Output',np.float32), ('Atten_NA_Input','Atten_NA_Input',np.float32),
+				('Atten_RTAmp_Input','Atten_RTAmp_Input',np.float32), ('RTAmp_In_Use', 'RTAmp_In_Use', int),
+				('Elapsed_Time', 'Meaurement_Duration', np.float),('Thermometer_Configuration','Thermometer_Configuration',None),
+				('Thermometer_Bias','Thermometer_Voltage_Bias', None)]
 
-	# 	for t in tags:
-	# 		try:
-	# 			if t[1].find(':')>-1: #The case of a dictionary
-	# 				t1 = t[1].split(':')
+		for t in tags:
+			try:
+				if t[1].find(':')>-1: #The case of a dictionary
+					t1 = t[1].split(':')
 
-	# 				#This try/except block is for the case where self.metadata.__dict__['?'] is a dictionary
-	# 				try:
-	# 					self.metadata.__dict__[t1[0]].update([(t1[1],self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])
-	# 				except:
-	# 					self.metadata.__dict__[t1[0]] = dict([(t1[1],self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])	
-	# 			else:
-	# 				self.metadata.__dict__[t[1]] = self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None)
-	# 		except: 
-	# 			#the case that the field does not exist or that its in an unexpected format
-	# 			#print('Field named {0}{1} is not found. Setting value to None'.format(t[0], (':'+t[3]) if len(t) > 3 else '')) # this usesScandata nomenclature
-	# 			print('Field named {0} is not found.'.format(t[1])) # this uses self.metadata nomenclature
-	# 	try:
-	# 		self.metadata.Powers                = self.metadata.Powers.squeeze() #for case there are multiples powers
-	# 	except:
-	# 		self.metadata.Powers                = np.array([self.metadata.Powers]) # for the case there is only one power		
-
-		
-	# 	# Remove nested array for Thermometer_Voltage_Bias data, if this data exists
-	# 	if hasattr(self.metadata,'Thermometer_Voltage_Bias'):
-	# 		self.metadata.Thermometer_Voltage_Bias  = self.metadata.Thermometer_Voltage_Bias.reshape((self.metadata.Thermometer_Voltage_Bias.shape[1],))
-
-	# 	if self.metadata.Thermometer_Configuration is not None:#if self.metadata.Thermometer_Configuration != None:
-	# 		self.metadata.Thermometer_Configuration = (str(self.metadata.Thermometer_Configuration.squeeze()[0][0]),str(self.metadata.Thermometer_Configuration.squeeze()[1][0]))
-
-	# 	# Reshape  Heater_Voltage array and  Remove final Heater voltage from self.Heater_Voltage (The final value is just the heater value at which to leave fridge )
-	# 	self.metadata.Heater_Voltage = self.metadata.Heater_Voltage.reshape((self.metadata.Heater_Voltage.shape[1],))
-	# 	self.metadata.Heater_Voltage = self.metadata.Heater_Voltage[0:-1]
-
-
-	# 	print('Loading Run: {0}'.format(self.metadata.Run))
-	# 	print('There are {0} heater voltage(s), {1} input power(s), and {2} frequecy span(s)'.format(self.metadata.Heater_Voltage.shape[0],self.metadata.Powers.shape[0], self.metadata.Freq_Range.shape[0]))
-	# 	heater_voltage_num = 0; power_sweep_num = 0; fsteps = 0; tpoints = 0;
-
-	# 	# determine fsteps = length of the freq/S21 array
-	# 	if self.metadata.Heater_Voltage.shape[0] == 1:
-	# 		fsteps = self.metadata.Freq_Range[heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][2].squeeze()[()].size # non temp sweep, single freq_range, powersweep
-	# 		try: # Try to determine the number of temperture readings per scan. If data does not contain temp readings, pass
-	# 			tpoints = self.metadata.Freq_Range[heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][3].squeeze()[()].size
-	# 		except:
-	# 			pass
-	# 	else:					
-	# 		for freq_range_num in xrange(self.metadata.Freq_Range.shape[0]):			
-	# 			steps = self.metadata.Freq_Range[freq_range_num][1]['Temp'][0][0][heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][2].squeeze()[()].size
-	# 			fsteps = max(steps,fsteps)
-	# 			try: # Try to determine the number of temperture readings per scan. If data does not contain temp readings, pass
-	# 				points = self.metadata.Freq_Range[freq_range_num][1]['Temp'][0][0][heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][3].squeeze()[()].size
-	# 				tpoints = max(points,tpoints)
-	# 			except:
-	# 				pass
-
-
-	# 	self._define_sweep_data_columns(fsteps,tpoints)
+					#This try/except block is for the case where self.metadata.__dict__['?'] is a dictionary
+					try:
+						self.metadata.__dict__[t1[0]].update([(t1[1],self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])
+					except:
+						self.metadata.__dict__[t1[0]] = dict([(t1[1],self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])	
+				else:
+					self.metadata.__dict__[t[1]] = self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None)
+			except: 
+				#the case that the field does not exist or that its in an unexpected format
+				#print('Field named {0}{1} is not found. Setting value to None'.format(t[0], (':'+t[3]) if len(t) > 3 else '')) # this usesScandata nomenclature
+				print('Field named {0} is not found.'.format(t[1])) # this uses self.metadata nomenclature
+		try:
+			self.metadata.Powers                = self.metadata.Powers.squeeze() #for case there are multiples powers
+		except:
+			self.metadata.Powers                = np.array([self.metadata.Powers]) # for the case there is only one power		
 
 		
-	# 	self.metadata.Num_Powers 			= self.metadata.Powers.size
-	# 	self.metadata.Num_Heater_Voltages 	= self.metadata.Heater_Voltage.size
-	# 	self.metadata.Num_Ranges 			= self.metadata.Range.shape[0]
-	# 	try:
-	# 		self.metadata.Cable_Calibration = self._Cable_Calibration
-	# 		print('Cable Calibraiton data found and saved in Sweep_Array metadata.')
-	# 	except:
-	# 		pass
+		# Remove nested array for Thermometer_Voltage_Bias data, if this data exists
+		if hasattr(self.metadata,'Thermometer_Voltage_Bias'):
+			self.metadata.Thermometer_Voltage_Bias  = self.metadata.Thermometer_Voltage_Bias.reshape((self.metadata.Thermometer_Voltage_Bias.shape[1],))
 
-	# 	try:
-	# 		self.metadata.Temperature_Calibration = self._Temperature_Calibration
-	# 		print('Temperature Calibraiton data found and saved in Sweep_Array metadata.')
-	# 	except:
-	# 		pass
+		if self.metadata.Thermometer_Configuration is not None:#if self.metadata.Thermometer_Configuration != None:
+			self.metadata.Thermometer_Configuration = (str(self.metadata.Thermometer_Configuration.squeeze()[0][0]),str(self.metadata.Thermometer_Configuration.squeeze()[1][0]))
 
-	# 	if self.metadata.Num_Temperatures > 0:
-	# 		print('Temperature readings found for scan(s). {0} readings per scan'.format(self.metadata.Num_Temperatures))
-	# 	### Examples of dealing with Freq_Range Data structure imported from Matlab .mat file			
-	# 	#    k.Freq_Range[heater_voltage_num][1]['PowerSweep']
-	# 	# 					  k.Freq_Range[0][1]['PowerSweep']
-	# 	# j.Freq_Range[0][1]['Temp'][0][0][0][1]['PowerSweep']
-	# 	# dt = np.dtype(('O', (2,3)))
-	# 	# entended = np.zeros(0,dtype = dt)
-	# 	# dt = np.dtype(('O',('O',[('Temp',('O',('O')))])))
-	# 	# dt = np.dtype([('O',[('O',[('Temp',[('O',('O'))])])])])
-	# 	# #this is the closest I can come to replecating the structure of a Temp Power Sweep
-	# 	# dt = np.dtype([('O',[('Temp','O',(1,1))],(1,2))])
+		# Reshape  Heater_Voltage array and  Remove final Heater voltage from self.Heater_Voltage (The final value is just the heater value at which to leave fridge )
+		self.metadata.Heater_Voltage = self.metadata.Heater_Voltage.reshape((self.metadata.Heater_Voltage.shape[1],))
+		self.metadata.Heater_Voltage = self.metadata.Heater_Voltage[0:-1]
+
+
+		print('Loading Run: {0}'.format(self.metadata.Run))
+		print('There are {0} heater voltage(s), {1} input power(s), and {2} frequecy span(s)'.format(self.metadata.Heater_Voltage.shape[0],self.metadata.Powers.shape[0], self.metadata.Freq_Range.shape[0]))
+		heater_voltage_num = 0; power_sweep_num = 0; fsteps = 0; tpoints = 0;
+
+		# determine fsteps = length of the freq/S21 array
+		if self.metadata.Heater_Voltage.shape[0] == 1:
+			fsteps = self.metadata.Freq_Range[heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][2].squeeze()[()].size # non temp sweep, single freq_range, powersweep
+			try: # Try to determine the number of temperture readings per scan. If data does not contain temp readings, pass
+				tpoints = self.metadata.Freq_Range[heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][3].squeeze()[()].size
+			except:
+				pass
+		else:					
+			for freq_range_num in xrange(self.metadata.Freq_Range.shape[0]):			
+				steps = self.metadata.Freq_Range[freq_range_num][1]['Temp'][0][0][heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][2].squeeze()[()].size
+				fsteps = max(steps,fsteps)
+				try: # Try to determine the number of temperture readings per scan. If data does not contain temp readings, pass
+					points = self.metadata.Freq_Range[freq_range_num][1]['Temp'][0][0][heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][3].squeeze()[()].size
+					tpoints = max(points,tpoints)
+				except:
+					pass
+
+
+		self._define_sweep_data_columns(fsteps,tpoints)
 
 		
-	# 	i=0
-	# 	self.Sweep_Array = np.zeros(self.metadata.Heater_Voltage.shape[0]*self.metadata.Powers.shape[0]*self.metadata.Freq_Range.shape[0], dtype = self.sweep_data_columns)
-	# 	for freq_range_num in xrange(self.metadata.Freq_Range.shape[0]):
-	# 			if self.metadata.Heater_Voltage.shape[0] == 1:
-	# 				heater_voltages = self.metadata.Freq_Range # non temp sweep, single freq_range, powersweep
-	# 			else:					
-	# 				heater_voltages = self._extract_type(self.metadata.Freq_Range[freq_range_num,1]['Temp'])
-	# 			#start here for single res powersweep
-	# 			for heater_voltage_num in xrange(heater_voltages.shape[0]):
-	# 				sweep_powers = self._extract_type(heater_voltages[heater_voltage_num,1], field = 'PowerSweep')
-	# 				for sweep in sweep_powers[:,0:sweep_powers.shape[1]]:
-	# 					self._define_sweep_array(i, Fstart = self.metadata.Range[freq_range_num,0],
-	# 												Fstop = self.metadata.Range[freq_range_num,1],
-	# 												Heater_Voltage = self.metadata.Heater_Voltage[heater_voltage_num],
-	# 												Thermometer_Voltage_Bias = self.metadata.Thermometer_Voltage_Bias[heater_voltage_num] if hasattr(self.metadata,'Thermometer_Voltage_Bias') else 0,#set to zero unless there is an array of temps in the ScanData
-	# 												Pinput_dB = sweep[0].squeeze()[()] - self.metadata.Atten_Added_At_NA if self.metadata.Atten_Added_At_NA != None else sweep[0].squeeze()[()], #we only want the power coming out of the source, i.e. the NA
-	# 												S21 = sweep[1].squeeze()[()],
-	# 												Frequencies = sweep[2].squeeze()[()],
-	# 												Temperature_Readings = sweep[3].squeeze()[()] if (sweep.size > 3) and (np.shape(sweep[3].squeeze()[()])[0] != 0) else np.array([0]), #set to zero unless there is an array of temps in the ScanData
-	# 												Is_Valid = True)
-	# 					i = i + 1
+		self.metadata.Num_Powers 			= self.metadata.Powers.size
+		self.metadata.Num_Heater_Voltages 	= self.metadata.Heater_Voltage.size
+		self.metadata.Num_Ranges 			= self.metadata.Range.shape[0]
+		try:
+			self.metadata.Cable_Calibration = self._Cable_Calibration
+			print('Cable Calibraiton data found and saved in Sweep_Array metadata.')
+		except:
+			pass
 
-	# 	if  hasattr(self.metadata,'Thermometer_Voltage_Bias'):
-	# 		del(self.metadata.__dict__['Thermometer_Voltage_Bias'])
-	# 	del(self.metadata.__dict__['Powers'])
-	# 	del(self.metadata.__dict__['Heater_Voltage'])
-	# 	del(self.metadata.__dict__['Range'])
-	# 	del(self.metadata.__dict__['Freq_Range'])
+		try:
+			self.metadata.Temperature_Calibration = self._Temperature_Calibration
+			print('Temperature Calibraiton data found and saved in Sweep_Array metadata.')
+		except:
+			pass
 
-	# 	# if self.metadata.Atten_NA_Output == None: #redundant to have both
-	# 	# 	del(self.metadata.__dict__['Atten_NA_Output'])
-	# 	# else:
-	# 	# 	del(self.metadata.__dict__['Atten_Added_At_NA'])
+		if self.metadata.Num_Temperatures > 0:
+			print('Temperature readings found for scan(s). {0} readings per scan'.format(self.metadata.Num_Temperatures))
+		### Examples of dealing with Freq_Range Data structure imported from Matlab .mat file			
+		#    k.Freq_Range[heater_voltage_num][1]['PowerSweep']
+		# 					  k.Freq_Range[0][1]['PowerSweep']
+		# j.Freq_Range[0][1]['Temp'][0][0][0][1]['PowerSweep']
+		# dt = np.dtype(('O', (2,3)))
+		# entended = np.zeros(0,dtype = dt)
+		# dt = np.dtype(('O',('O',[('Temp',('O',('O')))])))
+		# dt = np.dtype([('O',[('O',[('Temp',[('O',('O'))])])])])
+		# #this is the closest I can come to replecating the structure of a Temp Power Sweep
+		# dt = np.dtype([('O',[('Temp','O',(1,1))],(1,2))])
 
-	# def load_touchstone(self,filename, pick_loop = True):
-	# 	''' The function loads S21 and Freq from  Sonnet .s2p or .s3p files into the Sweep_Array structured np array
-	# 	All Sij are extracted, but only  S21 is saved into Sweep_Array. Future editions of this code might  find need 
-	# 	to load other Sij becuase S21.
-
-	# 	The function only loads one transmission array (S21).  pick_loop = True immediatly selectes this loop as the 
-	# 	current loop.
-	# 	'''
-
-	# 	import tempfile
-	# 	import io
-
-	# 	#delete previous metadata object
-	# 	del(self.metadata)
-	# 	self.metadata = metadata()
-
-	# 	dt_s2p = [('Freq', np.float64), ('S11r', np.float64), ('S11i', np.float64), ('S12r', np.float64), ('S12i', np.float64), 
-	# 									('S21r', np.float64), ('S21i', np.float64), ('S22r', np.float64), ('S22i', np.float64)]
 		
-	# 	dt_s3p = [('Freq', np.float64), ('S11r', np.float64), ('S11i', np.float64), ('S12r', np.float64), ('S12i', np.float64), ('S13r', np.float64), ('S13i', np.float64),
-	# 									('S21r', np.float64), ('S21i', np.float64), ('S22r', np.float64), ('S22i', np.float64), ('S23r', np.float64), ('S23i', np.float64),
-	# 									('S31r', np.float64), ('S31i', np.float64), ('S32r', np.float64), ('S32i', np.float64), ('S33r', np.float64), ('S33i', np.float64)] 
+		i=0
+		self.Sweep_Array = np.zeros(self.metadata.Heater_Voltage.shape[0]*self.metadata.Powers.shape[0]*self.metadata.Freq_Range.shape[0], dtype = self.sweep_data_columns)
+		for freq_range_num in xrange(self.metadata.Freq_Range.shape[0]):
+				if self.metadata.Heater_Voltage.shape[0] == 1:
+					heater_voltages = self.metadata.Freq_Range # non temp sweep, single freq_range, powersweep
+				else:					
+					heater_voltages = self._extract_type(self.metadata.Freq_Range[freq_range_num,1]['Temp'])
+				#start here for single res powersweep
+				for heater_voltage_num in xrange(heater_voltages.shape[0]):
+					sweep_powers = self._extract_type(heater_voltages[heater_voltage_num,1], field = 'PowerSweep')
+					for sweep in sweep_powers[:,0:sweep_powers.shape[1]]:
+						self._define_sweep_array(i, Fstart = self.metadata.Range[freq_range_num,0],
+													Fstop = self.metadata.Range[freq_range_num,1],
+													Heater_Voltage = self.metadata.Heater_Voltage[heater_voltage_num],
+													Thermometer_Voltage_Bias = self.metadata.Thermometer_Voltage_Bias[heater_voltage_num] if hasattr(self.metadata,'Thermometer_Voltage_Bias') else 0,#set to zero unless there is an array of temps in the ScanData
+													Pinput_dB = sweep[0].squeeze()[()] - self.metadata.Atten_Added_At_NA if self.metadata.Atten_Added_At_NA != None else sweep[0].squeeze()[()], #we only want the power coming out of the source, i.e. the NA
+													S21 = sweep[1].squeeze()[()],
+													Frequencies = sweep[2].squeeze()[()],
+													Temperature_Readings = sweep[3].squeeze()[()] if (sweep.size > 3) and (np.shape(sweep[3].squeeze()[()])[0] != 0) else np.array([0]), #set to zero unless there is an array of temps in the ScanData
+													Is_Valid = True)
+						i = i + 1
 
+		if  hasattr(self.metadata,'Thermometer_Voltage_Bias'):
+			del(self.metadata.__dict__['Thermometer_Voltage_Bias'])
+		del(self.metadata.__dict__['Powers'])
+		del(self.metadata.__dict__['Heater_Voltage'])
+		del(self.metadata.__dict__['Range'])
+		del(self.metadata.__dict__['Freq_Range'])
 
-	# 	with tempfile.TemporaryFile() as tmp:
-	# 		with io.open(filename, mode='r') as f:
-	# 			# The following while loop copies the .sNp file into a temp file, which is destroyed when closed,
-	# 			# such that the tmp file is formated in the way np.loadtxt can read the data.
-	# 			indented = False
-	# 			prev_line = ''
-	# 			m = 1. # for frequency base conversion
-	# 			while 1: 
-	# 				line  = f.readline().replace('\n','')
+		# if self.metadata.Atten_NA_Output == None: #redundant to have both
+		# 	del(self.metadata.__dict__['Atten_NA_Output'])
+		# else:
+		# 	del(self.metadata.__dict__['Atten_Added_At_NA'])
 
-	# 				pos = f.tell()
-	# 				if line == '': # End of file is reached
-	# 					break
-	# 				elif line.startswith('! Data File Written:'): # Save as Metadata
-	# 					self.metadata.Time_Created = str(line.split('! Data File Written:')[1].strip())
-	# 					tmp.write(line + '\n')
-	# 				elif line.startswith('! From Project:') | line.startswith('! From Emgraph Data:'): # Save as Metadata
-	# 					self.metadata.Run = str(line.split(':')[1].strip())
-	# 					#self.metadata.IS_Sonnet_Simulation = True
-	# 					tmp.write(line + '\n')
-	# 				elif line[0] == '#':
-	# 					line  = line.replace('#','!#')
-	# 					if line.find('GHZ') >=-1:
-	# 						m = 1.0e9
-	# 					freq_convert = lambda s: s*m #Convert to Hertz
-	# 					tmp.write(line + '\n')	
-					
-	# 				elif line[0] == ' ': # in S matrix definition block
-	# 					prev_line = prev_line + ' ' + line.strip() + ' '
-	# 					next_line = f.readline()
-	# 					# if next line is NOT indented date, then S matrix definition block is finished 
-	# 					# and we write it to tmp on a single line.
-	# 					# for .s2p files the S matrix is fully defined on one line of f
-	# 					# for .s3p files, the S matrix is defined in three lines. second two are indented.
-						
-	# 					# if not ((next_line[0] == '') | (next_line[0] == ' ')): # Changing this line to be consistent with line below...
-	# 					if not ((next_line == '') or (next_line[0] == ' ')): 
-	# 						tmp.write(prev_line)
-	# 						tmp.write('\n')
-	# 						prev_line = ''
-	# 					f.seek(pos,0)
+	def load_touchstone(self,filename, pick_loop = True):
+		''' The function loads S21 and Freq from  Sonnet .s2p or .s3p files into the Sweep_Array structured np array
+		All Sij are extracted, but only  S21 is saved into Sweep_Array. Future editions of this code might  find need 
+		to load other Sij becuase S21.
+
+		The function only loads one transmission array (S21).  pick_loop = True immediatly selectes this loop as the 
+		current loop.
+		'''
+
+		self._define_sweep_data_columns(Touchstone_Data.size, tpoints)
+		j = np.complex(0,1)
+
+		self.Sweep_Array = np.zeros(1, dtype = self.sweep_data_columns)
 		
-	# 				elif line[0] == '!':
-	# 					tmp.write(line + '\n')
-
-	# 				else:
-	# 					tmp.write(line)
-	# 					next_line = f.readline()
-	# 					# add \n to line if it does not begin a S matrix definition block
-	# 					# if not ((next_line[0] == '') | (next_line[0] == ' ')): # Changed on 7/11/17 bc Nick was have problems reading in .s2p files
-	# 					if not ((next_line == '') or (next_line[0] == ' ')):
-	# 						tmp.write('\n')
-	# 					f.seek(pos,0)
-
-	# 		tmp.seek(0,0)
-	# 		if filename.endswith('.s2p'):
-	# 			dt = dt_s2p
-	# 		elif filename.endswith('.s3p'):
-	# 			dt = dt_s3p	
-	# 		Touchstone_Data = np.loadtxt(tmp, dtype=dt, comments='!', delimiter=None, converters=None, skiprows=0, usecols=None, unpack=False, ndmin=0)
-		
-	# 	tpoints = 0
-	# 	self._define_sweep_data_columns(Touchstone_Data.size, tpoints)
-	# 	j = np.complex(0,1)
-
-	# 	self.Sweep_Array = np.zeros(1, dtype = self.sweep_data_columns)
-		
-	# 	self._define_sweep_array(0, Fstart = freq_convert(Touchstone_Data['Freq'].min()), #Hz
-	# 								Fstop = freq_convert(Touchstone_Data['Freq'].max()), #Hz
-	# 								S21 = Touchstone_Data['S21r']+j*Touchstone_Data['S21i'],
-	# 								Frequencies = freq_convert(Touchstone_Data['Freq']), #Hz
-	# 								#Pinput_dB = 0,
-	# 								Is_Valid = True,
-	# 								#Mask = False, needs to be an array of lengh of S21
-	# 								Chi_Squared = 0,
-	# 								)
+		self._define_sweep_array(0, Fstart = freq_convert(Touchstone_Data['Freq'].min()), #Hz
+									Fstop = freq_convert(Touchstone_Data['Freq'].max()), #Hz
+									S21 = Touchstone_Data['S21r']+j*Touchstone_Data['S21i'],
+									Frequencies = freq_convert(Touchstone_Data['Freq']), #Hz
+									#Pinput_dB = 0,
+									Is_Valid = True,
+									#Mask = False, needs to be an array of lengh of S21
+									Chi_Squared = 0,
+									)
 
 
-	# 	self.metadata.Data_Source = filename
-	# 	#self.metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][:-1]-Touchstone_Data['Freq'][1:]).min()
-	# 	self.metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][0] - Touchstone_Data['Freq'][-1])/Touchstone_Data['Freq'].size #use average freq resolution
+		self.metadata.Data_Source = filename
+		#self.metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][:-1]-Touchstone_Data['Freq'][1:]).min()
+		self.metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][0] - Touchstone_Data['Freq'][-1])/Touchstone_Data['Freq'].size #use average freq resolution
 	
-	# 	if pick_loop == True: #since there is only one loop in Sweep_Array, we might as well pick it as the current loop
-	# 		self.pick_loop(0)
-	# 		#self.normalize_loop()
+		if pick_loop == True: #since there is only one loop in Sweep_Array, we might as well pick it as the current loop
+			self.pick_loop(0)
+			#self.normalize_loop()
 
-	# def downsample_loop(self,N):
-	# 	''' Reduce number of loop/freq data point by every Nth point and discarding all others'''
-	# 	self.loop.z = self.loop.z[0:-1:N]
-	# 	self.loop.freq = self.loop.freq[0:-1:N]
+	def downsample_loop(self,N):
+		''' Reduce number of loop/freq data point by every Nth point and discarding all others'''
+		self.loop.z = downsample_loop(N)[0]
+		self.loop.freq = downsample_loop(N)[1]
 
-	# def save_hf5(self, filename = database_location, overwrite = False):
-	# 	'''Saves current self.Sweep_Array into table contained in the hdf5 file speficied by filename.
-	# 	If overwite = True, self.Sweep_Array will overwright whatever is previous table data there is.
-	# 	'''
+	def save_hf5(self, filename = database_location, overwrite = False):
+		'''Saves current self.Sweep_Array into table contained in the hdf5 file speficied by filename.
+		If overwite = True, self.Sweep_Array will overwright whatever is previous table data there is.
+		'''
 		
-	# 	if not os.path.isfile(filename):
-	# 		print('Speficied h5 database does not exist. Creating new one.')
-	# 		pos = filename.find('/')
-	# 		if pos >= 0:
-	# 			try:
-	# 				os.makedirs(filename[0:pos+1])
-	# 			except OSError:
-	# 				print('{0} exists...'.format(filename[0:pos+1]))
-	# 		wmode = 'w'
-	# 	else:
-	# 		print('Speficied h5 database exists and will be updated.')
-	# 		wmode = 'a'
+		if not os.path.isfile(filename):
+			print('Speficied h5 database does not exist. Creating new one.')
+			pos = filename.find('/')
+			if pos >= 0:
+				try:
+					os.makedirs(filename[0:pos+1])
+				except OSError:
+					print('{0} exists...'.format(filename[0:pos+1]))
+			wmode = 'w'
+		else:
+			print('Speficied h5 database exists and will be updated.')
+			wmode = 'a'
 			
-	# 	db_title = 'Aggregation of Selected Data Sets'
-	# 	group_name = 'Run' + self.metadata.Run
-	# 	group_title = self.metadata.Test_Location
+		db_title = 'Aggregation of Selected Data Sets'
+		group_name = 'Run' + self.metadata.Run
+		group_title = self.metadata.Test_Location
 
 
-	# 	try:  # for forward compatabiliity with 75uW python DAQ
-	# 		d = datetime.datetime.strptime(self.metadata.Measurement_Start_Time , '%Y%m%d%H%M')
-	# 	except:
-	# 		pass
+		try:  # for forward compatabiliity with 75uW python DAQ
+			d = datetime.datetime.strptime(self.metadata.Measurement_Start_Time , '%Y%m%d%H%M')
+		except:
+			pass
 
-	# 	try:
-	# 		# case for scan data date
-	# 		d = datetime.datetime.strptime(self.metadata.Time_Created, '%B %d, %Y  %I:%M:%S.%f %p') # slightly wrong %f is microseconds. whereas we want milliseconds.
-	# 	except:
-	# 		pass
-	# 	try:
-	# 		#Case for sonnet date
-	# 		d = datetime.datetime.strptime(self.metadata.Time_Created, '%m/%d/%Y %H:%M:%S')
-	# 	except:
-	# 		pass
-	# 	sweep_data_table_name = 'T' + d.strftime('%Y%m%d%H%M')
+		try:
+			# case for scan data date
+			d = datetime.datetime.strptime(self.metadata.Time_Created, '%B %d, %Y  %I:%M:%S.%f %p') # slightly wrong %f is microseconds. whereas we want milliseconds.
+		except:
+			pass
+		try:
+			#Case for sonnet date
+			d = datetime.datetime.strptime(self.metadata.Time_Created, '%m/%d/%Y %H:%M:%S')
+		except:
+			pass
+		sweep_data_table_name = 'T' + d.strftime('%Y%m%d%H%M')
 
 		
 
-	# 	with tables.open_file(filename, mode = wmode, title = db_title ) as fileh:
-	# 		try:
-	# 			table_path = '/' + group_name + '/' + sweep_data_table_name
-	# 			sweep_data_table = fileh.get_node(table_path)
+		with tables.open_file(filename, mode = wmode, title = db_title ) as fileh:
+			try:
+				table_path = '/' + group_name + '/' + sweep_data_table_name
+				sweep_data_table = fileh.get_node(table_path)
 
-	# 			if overwrite == True:
-	# 				print('Table {0} exists. Overwriting...'.format(table_path))
-	# 				sweep_data_table.remove()
-	# 				sweep_data_table = fileh.create_table('/'+ group_name,sweep_data_table_name,description=self.sweep_data_columns,title = 'Sweep Data Table',filters=tables.Filters(0), createparents=True)
-	# 			else:
-	# 				print('Table {0} exists. Aborting...'.format(table_path))
-	# 				return
-	# 		except:
-	# 			print('Creating table {0}'.format('/'+ group_name+'/'+sweep_data_table_name))
-	# 			sweep_data_table = fileh.create_table('/'+ group_name,sweep_data_table_name,description=self.sweep_data_columns,title = 'Sweep Data Table',filters=tables.Filters(0), createparents=True)
+				if overwrite == True:
+					print('Table {0} exists. Overwriting...'.format(table_path))
+					sweep_data_table.remove()
+					sweep_data_table = fileh.create_table('/'+ group_name,sweep_data_table_name,description=self.sweep_data_columns,title = 'Sweep Data Table',filters=tables.Filters(0), createparents=True)
+				else:
+					print('Table {0} exists. Aborting...'.format(table_path))
+					return
+			except:
+				print('Creating table {0}'.format('/'+ group_name+'/'+sweep_data_table_name))
+				sweep_data_table = fileh.create_table('/'+ group_name,sweep_data_table_name,description=self.sweep_data_columns,title = 'Sweep Data Table',filters=tables.Filters(0), createparents=True)
 			
-	# 		# copy Sweep_Array to sweep_data_table
-	# 		sweep_data_table.append(self.Sweep_Array)
+			# copy Sweep_Array to sweep_data_table
+			sweep_data_table.append(self.Sweep_Array)
 
-	# 		# Save metadata
-	# 		for data in self.metadata.__dict__.keys():
-	# 			exec('sweep_data_table.attrs.{0} = self.metadata.{0}'.format(data))
-	# 			if self.metadata.__dict__[data] == None:
-	# 				print('table metadata {0} not defined and is set to None'.format(data))	
+			# Save metadata
+			for data in self.metadata.__dict__.keys():
+				exec('sweep_data_table.attrs.{0} = self.metadata.{0}'.format(data))
+				if self.metadata.__dict__[data] == None:
+					print('table metadata {0} not defined and is set to None'.format(data))	
 
-	# 		sweep_data_table.flush()	
+			sweep_data_table.flush()	
 
-	# 		# try:
-	# 		# 	TOC = fileh.get_node('/Contents') # is a table
-	# 		# except:
-	# 		# 	print('Creating h5 data set table of contents')
-	# 		# 	TOC = fileh.create_table('/', 'Contents', self.data_set_contents, "Table listing all tables contained in h5 file", tables.Filters(0)) #tables.Filters(0) means there is no data compression
+			# try:
+			# 	TOC = fileh.get_node('/Contents') # is a table
+			# except:
+			# 	print('Creating h5 data set table of contents')
+			# 	TOC = fileh.create_table('/', 'Contents', self.data_set_contents, "Table listing all tables contained in h5 file", tables.Filters(0)) #tables.Filters(0) means there is no data compression
 
-	# 		# TOC.append()
+			# TOC.append()
 
-	# 	# title = 'Data from Run ' + self.metadata.Run + ', Sensor: ' + self.metadata.Sensor + ', Ground Plane: ' + self.metadata.Ground_Plane
+		# title = 'Data from Run ' + self.metadata.Run + ', Sensor: ' + self.metadata.Sensor + ', Ground Plane: ' + self.metadata.Ground_Plane
 
-	# 	# #determine type of  measurement...
-	# 	# if  (self.Sweep_Array.size == 1) | (np.abs(self.Sweep_Array['Fstop'] - self.Sweep_Array['Fstart']).max() >= 100e6):
-	# 	# 	groupname = 'Survey'
-	# 	# elif (np.unique(self.Sweep_Array['Heater_Voltage']).size > 1) && (np.unique(self.Sweep_Array['Pinput_dB']).size == 1):
-	# 	# 	groupname = 'T_Sweep'
-	# 	# elif (np.unique(self.Sweep_Array['Heater_Voltage']).size == 1) && (np.unique(self.Sweep_Array['Pinput_dB']).size > 1):
-	# 	# 	groupname = 'P_Sweep'
-	# 	# elif (np.unique(self.Sweep_Array['Heater_Voltage']).size > 1) && (np.unique(self.Sweep_Array['Pinput_dB']).size > 1):
-	# 	# 	groupname = 'TP_Sweep'
-	# 	# else:
-	# 	# 	groupname = 'Sweep'
+		# #determine type of  measurement...
+		# if  (self.Sweep_Array.size == 1) | (np.abs(self.Sweep_Array['Fstop'] - self.Sweep_Array['Fstart']).max() >= 100e6):
+		# 	groupname = 'Survey'
+		# elif (np.unique(self.Sweep_Array['Heater_Voltage']).size > 1) && (np.unique(self.Sweep_Array['Pinput_dB']).size == 1):
+		# 	groupname = 'T_Sweep'
+		# elif (np.unique(self.Sweep_Array['Heater_Voltage']).size == 1) && (np.unique(self.Sweep_Array['Pinput_dB']).size > 1):
+		# 	groupname = 'P_Sweep'
+		# elif (np.unique(self.Sweep_Array['Heater_Voltage']).size > 1) && (np.unique(self.Sweep_Array['Pinput_dB']).size > 1):
+		# 	groupname = 'TP_Sweep'
+		# else:
+		# 	groupname = 'Sweep'
 
-	# 	# 	groupname = 'T' + str(np.unique(self.Sweep_Array['Heater_Voltage']).size) + 'P' +  str(np.unique(self.Sweep_Array['Pinput_dB']).size)	
+		# 	groupname = 'T' + str(np.unique(self.Sweep_Array['Heater_Voltage']).size) + 'P' +  str(np.unique(self.Sweep_Array['Pinput_dB']).size)	
 
 	# def decompress_gain(self, Compression_Calibration_Index = -1, Show_Plot = True, Verbose = True):
 	# 	''' Assumes the two lowest input powers of the power sweep are not gain compressed, thus
