@@ -1,10 +1,18 @@
-def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
+from .utils import _angle, _points_removed
+
+from scipy.stats import chisquare
+import numpy as np
+import numpy.ma as ma
+from scipy.optimize import minimize
+import matplotlib.pyplot as plt
+
+def phase_fit(loop, env_var, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 	'''
 	Note: its best to determine angles and angle differences by starting with complex numbers 
-	(interpreted as vectors) and then finding their angles with, np.angle or self._angle. It is
+	(interpreted as vectors) and then finding their angles with, np.angle or _angle. It is
 	not as accurate and prone to issues with domains (e.g. [-180,180]) to use arcsin or arccos.
 	'''
-	from scipy.stats import chisquare
+
 	
 	if isinstance(Fit_Method,str): #Allow for single string input for Fit_Method
 	   Fit_Method={Fit_Method}
@@ -12,16 +20,16 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 	
 	j = np.complex(0,1)
 	try:
-		zc = self.loop.a + j*self.loop.b
-		r = self.loop.r
+		zc = loop.a + j*loop.b
+		r = loop.r
 	except:
 		print('Phase fit needs loop center and radius, which are not currently defined. Aborting phase fit.')
 		return
 
 
 
-	f = f0 = self.loop.freq
-	z = z0 = self.loop.z
+	f = f0 = loop.freq
+	z = z0 = loop.z
 	
 
 	# Remove duplicate frequency elements in z and f, e.g. places where f[n] = f[n+1]
@@ -73,10 +81,10 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 
 
 	#translate circle to origin, and rotate so that z[zr_est_index] has angle 0 
-	z = z2 = ma.array((z.data-zc)*np.exp(-j*(self._angle(zc))), mask = z.mask)
+	z = z2 = ma.array((z.data-zc)*np.exp(-j*(_angle(zc))), mask = z.mask)
 
 	#Compute theta_est before radious cut to prevent radius cut from removing z[f==fr_est]
-	theta_est = self._angle(z[zr_est_index]) #self._angle(z[zr_est_index])	
+	theta_est = _angle(z[zr_est_index]) #_angle(z[zr_est_index])	
 
 	#Radius Cut: remove points that occur within r_cutoff of the origin of the centered data. 
 	#(For non-linear resonances that have spurious point close to loop center)	
@@ -87,7 +95,7 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 	z = z3 = ma.masked_where((np.abs(z2)<r_cutoff_in) | (np.abs(z2)>r_cutoff_out),z2, copy = True)
 	# for substantially deformed loops we make sure that no more than Max_Removed_Radius_Cut points are removed from inner radious cut
 	Max_Removed_Radius_Cut = 25
-	while self._points_removed(z2, z3)[0] > Max_Removed_Radius_Cut:
+	while _points_removed(z2, z3)[0] > Max_Removed_Radius_Cut:
 		r_fraction_in = r_fraction_in - 0.02
 		r_cutoff_in  = r_fraction_in*r
 		z = z3 = ma.masked_where((np.abs(z2)<r_cutoff_in) | (np.abs(z2)>r_cutoff_out),z2, copy = True)
@@ -101,7 +109,7 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 	N = 8
 	z = z4 = ma.masked_where((f > fr_est + N*FWHM_est) | (fr_est - N*FWHM_est > f),z,copy = True)
 	f = f4 = ma.array(f,mask = z.mask)
-	z_theta,z_theta_offset =self._angle(z, return_offset = True) # dont used self._angle(z)!
+	z_theta,z_theta_offset =_angle(z, return_offset = True) 
 
 
 	#Angle jump cut : masks points where angle jumps to next branch of angle function, 
@@ -133,7 +141,7 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 	z_theta_c  = ma.compressed(z_theta)
 	
 
-	if mysys.startswith('Windows'):
+	if env_var.mysys.startswith('Windows'):
 		dt = np.float64
 	else:	
 		dt = np.float128
@@ -203,22 +211,7 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 	   print("Unrecognized fit method data type. Aborting fit. \n\t Please specify using a string or a set of strings from one of {0} or 'Multiple'".format(fit_func.keys()))
 	   return	         	   
 	               				
-	
-	#Does not work if the objective function is re-arranged as in the following
-	# print('Nelder-Mead 2 ################# ')
-	# def obj(x,z_theta,f):
-	# 	theta,fr,Q = x
-	# 	return np.square(np.tan((z_theta - theta)/2) - (2.0*Q*(1-f/fr))).sum()
-	# res = minimize(obj, p0, args=(z_theta,f), method='Nelder-Mead', jac=None, hess=None, hessp=None, bounds=None, constraints=(), tol=1e-20, callback=None, options={'disp':True})
-	# print(res)
 
-	# Least square method does not find a good Q fit and the sum of the squares for solution is fairly high
-	# print('Least Square ################# ')
-	# print(fit['Least-Squares'])
-	# print(np.square(fit['Least-Squares'][2]['fvec']).sum()) # this is the value of the sum of the squares for the solution
-	# x = fit['Least-Squares'][0] 
-	
-	#x = res.x 
 	bestfit = list(fit)[0]
 	lowest = fit[bestfit].fun
 	for key in fit.keys(): 
@@ -227,99 +220,41 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 			bestfit = key
 	
 
-	theta0 = 2*np.pi - self._angle(np.exp(np.complex(0,fit[bestfit].x[0] - z_theta_offset)).conj())
+	theta0 = 2*np.pi - _angle(np.exp(np.complex(0,fit[bestfit].x[0] - z_theta_offset)).conj())
 	zc_m = np.abs(zc)
 	R = np.sqrt(zc_m*zc_m + r*r -2.0*zc_m*r*np.cos(theta0) ) # Used in Qc
 
-	alpha = self._angle(zc)#np.angle(zc)#
+	alpha = _angle(zc)#np.angle(zc)#
 	z_pivot = zc + (np.complex(-r*np.cos(theta0), r*np.sin(theta0)))*np.complex(np.cos(alpha),np.sin(alpha))# vector for origin to pizot point
-	theta = self._angle(z_pivot)
-	phi  = np.angle(-(zc-z_pivot)*np.exp(-j*(self._angle(z_pivot)))) #not that domain is [-180, +180]
+	theta = _angle(z_pivot)
+	phi  = np.angle(-(zc-z_pivot)*np.exp(-j*(_angle(z_pivot)))) #not that domain is [-180, +180]
 
-	self.loop.R = R
-	self.loop.phase_fit_success = fit[bestfit].success
-	self.loop.phase_fit_z = z5.data
-	self.loop.phase_fit_mask = z5.mask
-	self.loop.phase_fit_method = bestfit
-	self.loop.Q = Q = fit[bestfit].x[2]
-	self.loop.Qc = Qc = Q*R/(2*r)
-	self.loop.Qi = Q*Qc/(Qc-Q)
-	self.loop.fr = fr = fit[bestfit].x[1]
-	self.loop.FWHM = fr/Q
-	self.loop.phi = phi # radian
-	self.loop.theta = theta # radian
-	self.loop.chisquare, self.loop.pvalue = chisquare( z_theta_c,f_exp=fit[bestfit].x[0] + 2.0*np.arctan(2.0*Q*(1-f_c/fr)))
-	self.loop.chisquare = self.loop.chisquare/ f_c.shape[0]
+	loop.R = R
+	loop.phase_fit_success = fit[bestfit].success
+	loop.phase_fit_z = z5.data
+	loop.phase_fit_mask = z5.mask
+	loop.phase_fit_method = bestfit
+	loop.Q = Q = fit[bestfit].x[2]
+	loop.Qc = Qc = Q*R/(2*r)
+	loop.Qi = Q*Qc/(Qc-Q)
+	loop.fr = fr = fit[bestfit].x[1]
+	loop.FWHM = fr/Q
+	loop.phi = phi # radian
+	loop.theta = theta # radian
+	loop.chisquare, loop.pvalue = chisquare( z_theta_c,f_exp=fit[bestfit].x[0] + 2.0*np.arctan(2.0*Q*(1-f_c/fr)))
+	loop.chisquare = loop.chisquare/ f_c.shape[0]
 	#estimated quantities from MAG S21 
-	self.loop.fr_est = fr_est
-	self.loop.FWHM_est = FWHM_est
-	self.loop.depth_est = depth_est
-	self.loop.Q_est = Q_est
+	loop.fr_est = fr_est
+	loop.FWHM_est = FWHM_est
+	loop.depth_est = depth_est
+	loop.Q_est = Q_est
 	
-
-
-	# print 'phi + theta =  {0} deg'.format((phi+theta)*180/np.pi)
-	# # abs_phi = np.arcsin(np.angle(z_pivot/zc)*(np.abs(zc)/r))
-	# # #if theta > alpha:
-
-	# # print 'theta is {} '.format(theta*180/np.pi)
-	# # print 'phi is {}'.format( abs_phi*180/np.pi)
-	# # #when -r*np.sin(theta0) is negative, phi is positive
-	# # np.angle(-(zc-z_pivot)*np.exp(-j*(self._angle(z_pivot))))
-	# # print 'phi is {}'.format(np.angle(-(zc-z_pivot)*np.exp(-j*(self._angle(z_pivot))))*180/np.pi)
-	
-
-
-	# alpha = self._angle(zc)#np.angle(zc)#
-	# theta_f = -1.*(fit[bestfit].x[0] - z_theta_offset) # minus becasue of how "theta" is the objective function obj()
-	# phi_theta = theta_f + alpha + np.pi #np.fmod(theta_f + alpha, np.pi) # return angle in th domain [+pi,-pi]
-	# print 'phi + theta =  {0} deg, and alpha  = ang(zc) = {1} deg, theta_f is {2}, ztheta offset is {3} '.format((phi_theta)*180/np.pi,alpha*180/np.pi , theta_f*180/np.pi, z_theta_offset*180/np.pi)
-	
-	# def rectify_angle(ang, offset,alpha):
-	# 	''' output correct angle in domain [-pi, pi]
-	# 	'''
-
-	# 	s = np.sign(offset)
-	# 	if (alpha < np.pi/2. ) | (alpha > 3*np.pi/2.):
-	# 		if s > 0:
-	# 			return np.mod(ang, np.pi)
-	# 		else:
-	# 			return np.mod(ang, np.pi) - np.pi
-	# 	else:
-	# 		if s > 0:
-	# 			return np.mod(ang, np.pi) - np.pi
-	# 		else:
-	# 			return np.mod(ang, np.pi) 
-
-	# print 'guess algorith:  phi + theta =  {0} deg'.format(rectify_angle(phi_theta, z_theta_offset, alpha)*180/np.pi)
-	# print 'theta is {0} deg, and zc is {1} deg, offset is {2}'.format((fit[bestfit].x[0] -z_theta_offset )*180/np.pi,self._angle(zc)*180/np.pi , z_theta_offset*180/np.pi)
-	# print 'phi is {}'.format((180/np.pi)*phi)
-
-
-	#self.loop.phi = rectify_angle(phi, z_theta_offset, alpha)
-	#self.loop.theta = rectify_angle(theta, z_theta_offset, alpha) #theta#(self._angle(zc)-(fit[bestfit].x[0] - z_theta_offset )- 1*np.pi)
-
-	# zc_m = np.abs(zc)
-	# leg = np.sqrt(zc_m*zc_m + r*r -2.0*zc_m*r*np.cos(rectify_angle(theta_f, z_theta_offset, alpha)) )
-	# phi = np.arcsin(zc_m*np.sin(theta_f)/leg)
-	# theta =  rectify_angle(phi_theta, z_theta_offset, alpha)- phi
-	# print  'theta =  {0} deg, and phi  = {1} deg'.format((theta)*180/np.pi,phi*180/np.pi)
-
-	# def recify_offset(ang):
-	# 	if ang<0:
-	# 		ang = 2.*np.pi - ang
-	# 	return ang
-	# alpha = self._angle(zc)#np.angle(zc)#
-	# theta_f = -1.*(fit[bestfit].x[0] + recify_offset(z_theta_offset)) # minus becasue of how "theta" is the objective function obj()
-	# phi_theta = theta_f + alpha + np.pi #np.fmod(theta_f + alpha, np.pi) # return angle in th domain [+pi,-pi]
-	# print 'phi + theta =  {0} deg, and alpha  = ang(zc) = {1} deg, theta_f is {2}, ztheta offset is {3} '.format((phi_theta)*180/np.pi,alpha*180/np.pi , theta_f*180/np.pi, z_theta_offset*180/np.pi)
-	# print 'guess algorith:  phi + theta =  {0} deg'.format(rectify_angle(phi_theta, z_theta_offset, alpha)*180/np.pi)
 
 	if Verbose: 
-		print('Duplicates cuts:\n\t{0} duplicate frequencies removed from loop data, {1} remaining data points'.format(*self._points_removed(z0,z1)))
-		print('Radius cut:\n\t{2} points < r_loop*{0} or > r_loop*{1} found and removed, {3} remaining data points'.format(r_fraction_in, r_fraction_out,*self._points_removed(z2,z3)))
-		print('Bandwidth cut:\n\t{1} points outside of fr_est +/- {0}*FWHM_est removed, {2} remaining data points'.format(N, *self._points_removed(z3,z4)))
-		print('Angle jump cut:\n\t{0} points with discontinuous jumps in loop angle removed, {1} remaining data points'.format(*self._points_removed(z4,z5)))
+		print('Duplicates cuts:\n\t{0} duplicate frequencies removed from loop data, {1} remaining data points'.format(*_points_removed(z0,z1)))
+		print('Radius cut:\n\t{2} points < r_loop*{0} or > r_loop*{1} found and removed, {3} remaining data points'.format(r_fraction_in, r_fraction_out,*_points_removed(z2,z3)))
+		print('Bandwidth cut:\n\t{1} points outside of fr_est +/- {0}*FWHM_est removed, {2} remaining data points'.format(N, *_points_removed(z3,z4)))
+		print('Angle jump cut:\n\t{0} points with discontinuous jumps in loop angle removed, {1} remaining data points'.format(*_points_removed(z4,z5)))
 		print('Initial Guess:\n\tLoop rotation {0} deg, fr {1}, Q {2}'.format(p0[0]*180/np.pi,p0[1],p0[2] ))
 
 		for method in fit.keys():
@@ -328,7 +263,7 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 
 
 	if Show_Plot:
-		total_removed, total_used_in_fit = self._points_removed(z0,z5)
+		total_removed, total_used_in_fit = _points_removed(z0,z5)
 		fig1 = plt.figure( facecolor = 'w',figsize = (10,10))
 		ax = fig1.add_subplot(6,1,1)
 		ax.set_title('Number of points used in fit = '+str(total_used_in_fit)+', Number of points removed = ' + str(total_removed) )
@@ -375,11 +310,11 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 		line = ax.plot(z5[ma.getmaskarray(z5)].data.real, z5[ma.getmaskarray(z5)].data.imag,'r.', alpha = 0.2,label = 'Excluded Data')
 		ax.legend(loc = 'center left', bbox_to_anchor=(1.01, 0.5), fontsize=10, scatterpoints =1, numpoints = 1, labelspacing = .1)#,numpoints)
 		
-		text = ('$*Resonator Properties*$\n' + '$Q =$ ' + '{0:.2f}'.format(self.loop.Q) +'\nf$_0$ = ' + '{0:.6f}'.format(self.loop.fr/1e6) 
-			+  ' MHz\n$Q_c$ = ' + '{0:.2f}'.format(self.loop.Qc) + '\n$Q_i$ = ' + '{0:.2f}'.format(self.loop.Qi) + '\n|S$_{21}$|$_{min}$ = ' 
-			+ '{0:.3f}'.format(self.loop.depth_est) + ' dB' + '\nBW$_{FWHM}$ = ' + '{0:.3f}'.format(self.loop.FWHM/1e3) +  ' kHz' 
-			+ '\n$\chi^{2}$ = ' + '{0:.4f}'.format(self.loop.chisquare) + '\n$\phi$ = ' + '{0:.3f}'.format(self.loop.phi*180/np.pi) +' deg' + '\n' + r'$\theta$ = ' 
-			+ '{0:.3f}'.format(self.loop.theta*180/np.pi) +' deg' +'\n$- $'+self.loop.phase_fit_method 
+		text = ('$*Resonator Properties*$\n' + '$Q =$ ' + '{0:.2f}'.format(loop.Q) +'\nf$_0$ = ' + '{0:.6f}'.format(loop.fr/1e6) 
+			+  ' MHz\n$Q_c$ = ' + '{0:.2f}'.format(loop.Qc) + '\n$Q_i$ = ' + '{0:.2f}'.format(loop.Qi) + '\n|S$_{21}$|$_{min}$ = ' 
+			+ '{0:.3f}'.format(loop.depth_est) + ' dB' + '\nBW$_{FWHM}$ = ' + '{0:.3f}'.format(loop.FWHM/1e3) +  ' kHz' 
+			+ '\n$\chi^{2}$ = ' + '{0:.4f}'.format(loop.chisquare) + '\n$\phi$ = ' + '{0:.3f}'.format(loop.phi*180/np.pi) +' deg' + '\n' + r'$\theta$ = ' 
+			+ '{0:.3f}'.format(loop.theta*180/np.pi) +' deg' +'\n$- $'+loop.phase_fit_method 
 			+ ' fit $-$') 
 		bbox_args = dict(boxstyle="round", fc="0.8")        
 		fig1.text(0.10,0.7,text,
@@ -408,7 +343,7 @@ def phase_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True):
 		for key in fit.keys():
 			line = ax.plot(f,(z_theta - fit[key].x[0] - 2.0*np.arctan(2.0*fit[key].x[2]*(1-f/fit[key].x[1]))),'b'+style[s], linewidth = 3, label = 'Data - Fit ' + key)
 			s += 1
-		ax.set_ylabel('Angle [rad]')
+		ax.set_ylabel('Angle [rad]\nresiduals')
 		ax.set_xlabel('Freq [Hz]')
 		ax.legend(loc = 'right', fontsize=10,scatterpoints =1, numpoints = 1, labelspacing = .1)
 		plt.show()

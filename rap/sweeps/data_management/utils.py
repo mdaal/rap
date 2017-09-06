@@ -1,16 +1,20 @@
 
+
+
 ### external imports
 import scipy.io #for loading .mat file
 import urllib2
+import numpy as np
+import os
 
 def _read_scandata_from_file(filename_or_path):
 		
 	mat = scipy.io.loadmat(filename_or_path)
 
-	return mat
+	return mat, filename_or_path
 
 
-def _download_data(URL):
+def _download_data(URL, **auth):
 	''' Authenticats to URL containing data.
 	Copies the .mat file licated at URL to a local file in local directory.
 	.mat file is a Scan_Data matlab structure.
@@ -18,23 +22,29 @@ def _download_data(URL):
 	deletes local file.'''
 
 
-	passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-	# this creates a password manager
-	passman.add_password(None, URL, username, password)
-	# because we have put None at the start it will always
-	# use this username/password combination for  urls
-	# for which `URL` is a super-url
 
-	authhandler = urllib2.HTTPBasicAuthHandler(passman)
-	# create the AuthHandler
+	if 'username' in auth.keys() and 'password' in auth.keys():
+		passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
+		# this creates a password manager
 
-	opener = urllib2.build_opener(authhandler)
+		username = auth['username']
+		password = auth['password']
 
-	urllib2.install_opener(opener)
-	# All calls to urllib2.urlopen will now use our handler
-	# Make sure not to include the protocol in with the URL, or
-	# HTTPPasswordMgrWithDefaultRealm will be very confused.
-	# You must (of course) use it when fetching the page though.
+		passman.add_password(None, URL, username, password)
+		# because we have put None at the start it will always
+		# use this username/password combination for  urls
+		# for which `URL` is a super-url
+
+		authhandler = urllib2.HTTPBasicAuthHandler(passman)
+		# create the AuthHandler
+
+		opener = urllib2.build_opener(authhandler)
+
+		urllib2.install_opener(opener)
+		# All calls to urllib2.urlopen will now use our handler
+		# Make sure not to include the protocol in with the URL, or
+		# HTTPPasswordMgrWithDefaultRealm will be very confused.
+		# You must (of course) use it when fetching the page though.
 
 	pagehandle = urllib2.urlopen(URL)
 	# authentication is now handled automatically for us
@@ -52,6 +62,7 @@ def _download_data(URL):
 	output.close()
 	#global mat
 	mat = scipy.io.loadmat('test.mat')
+	
 
 	#this id how to tell what variables are stored in test.mat
 	#print scipy.io.whosmat('test.mat')
@@ -64,7 +75,7 @@ def _download_data(URL):
 	#soup = BeautifulSoup(html)
 	#soup.contents
 	os.remove('test.mat')
-	return mat
+	return mat, URL
 	
 def _extract_type(obj, return_type = None, field = None):
 	'''scanandata object, obj, has a lot of single element arrays of arrays. this function gets the element.
@@ -112,6 +123,7 @@ def _extract_type(obj, return_type = None, field = None):
 		# 	print('Field named {0} is not found. Returning None'.format(field))
 		obj = itemloop(obj)
 	return obj
+
 def _define_sweep_data_columns(metadata, fsteps, tpoints):
 	''' Create the sweep_data_columns_list which is used to define the dtype of the  Sweep_Array'''
 	metadata.Fsteps = fsteps
@@ -163,12 +175,13 @@ def _define_sweep_data_columns(metadata, fsteps, tpoints):
 
 		#("S21_Processed"            , np.complex128, (fsteps,)), # Processed S21 used in phase fit 
 		]
+	sweep_data_columns = np.dtype(sweep_data_columns_list)
+	
+	return sweep_data_columns_list, sweep_data_columns
 
-	return sweep_data_columns_list
-
-def _define_sweep_array(index,**field_names):
+def _define_sweep_array(Sweep_Array, index,**field_names):
 	#for field_name in self.sweep_data_columns.fields.keys():
 	for field_name in field_names:
 		Sweep_Array[field_name][index] = field_names[field_name]
-	return Sweep_Array
+	
 					

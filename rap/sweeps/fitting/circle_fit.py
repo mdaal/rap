@@ -1,7 +1,11 @@
-def circle_fit(self, Show_Plot = True):
+import numpy as np
+import copy
+import sys
 
-	S21 = self.loop.z
-	Freq = self.loop.freq
+def circle_fit(loop):
+
+	S21 = loop.z
+	Freq = loop.freq
 
 	LargeCircle = 10
 	def pythag(m,n):
@@ -148,19 +152,15 @@ def circle_fit(self, Show_Plot = True):
 			A12 = dd*(U*s + V*c + R*s*c*0.5 - dd*U*V + UVR*(1.0 + dd*R*0.5))
 		return F1,F2,A11,A22,A12
 	
-	def sigma(x,y,loop):
+	def sigma(x,y,loop_var):
 		'''estimate of Sigma = square root of RSS divided by N
 		gives the root-mean-square error of the geometric circle fit'''
-		dx = x-loop.a
-		dy = x-loop.b
-		loop.sigma = (pythag(dx,dy)-loop.r).mean()
-		return loop
+		dx = x-loop_var.a
+		dy = x-loop_var.b
+		loop_var.sigma = (pythag(dx,dy)-loop_var.r).mean()
+		
 
 	def CircleFitByChernovHoussam(x,y, init, lambda_init):
-		import copy
-		import sys
-
-
 		REAL_EPSILON = sys.float_info.epsilon
 		REAL_MAX = sys.float_info.max
 
@@ -324,7 +324,6 @@ def circle_fit(self, Show_Plot = True):
 		old.r = pythag(x - old.a, y - old.b).mean() 
 		old.outer_iterations = i
 		old.inner_iterations = ii
-		loop = old
 		exit_code = 0
 		if old.outer_iterations  > IterMAX:
 			exit_code  = 1
@@ -335,10 +334,9 @@ def circle_fit(self, Show_Plot = True):
 		if (dmin <= 0.0) and (exit_code==0):
 			exit_code  = 3
 
-		loop.circle_fit_exit_code = exit_code
-		loop = sigma(x,y,loop)
-
-		return loop
+		old.circle_fit_exit_code = exit_code
+		sigma(x,y,old) #adds old.sigma value
+		return old
 	
 
 
@@ -347,8 +345,8 @@ def circle_fit(self, Show_Plot = True):
 	y = S21.imag
 
 
-	self.loop.a =  0#guess.real#0
-	self.loop.b =  0#guess.imag #0
+	loop.a =  0#guess.real#0
+	loop.b =  0#guess.imag #0
 	lambda_init = 0.001
 	#self.loop = CircleFitByChernovHoussam(x,y, self.loop, lambda_init)
 	if True: #self.loop.circle_fit_exit_code != 0:
@@ -357,25 +355,17 @@ def circle_fit(self, Show_Plot = True):
 		norm = np.abs(S21[1:5].mean())
 		S21 = S21/norm
 		guess = np.mean(S21)
-		self.loop.a =  guess.real#0
-		self.loop.b =  guess.imag #0
+		loop.a =  guess.real#0
+		loop.b =  guess.imag #0
 		lambda_init = 0.001
 		x = S21.real
 		y = S21.imag
-		self.loop = CircleFitByChernovHoussam(x,y, self.loop, lambda_init)
-		self.loop.a = self.loop.a*norm
-		self.loop.b = self.loop.b*norm
-		self.loop.r = self.loop.r*norm
-		self.loop.z = S21*norm
+		loop.__dict__.update(CircleFitByChernovHoussam(x,y, loop, lambda_init).__dict__)
+		loop.a = loop.a*norm
+		loop.b = loop.b*norm
+		loop.r = loop.r*norm
+		loop.z = S21*norm
 
-		if self.loop.circle_fit_exit_code != 0:
+		if loop.circle_fit_exit_code != 0:
 			print('!!!!!!!!!!!!!!    Circle Fit Failed Again! Giving Up...')
 
-	if Show_Plot:
-		fig, ax = self.plot_loop(show = False)[:2]		
-		t = np.linspace(0, 2.0*np.pi, num=50, endpoint=True)
-		j = np.complex(0,1); zc = self.loop.a + j*self.loop.b;  r = self.loop.r
-		line = ax.plot(zc.real + r*np.cos(t),zc.imag + r*np.sin(t),'y-', label = 'Circle Fit')
-		line = ax.plot([zc.real],[zc.imag],'yx', markersize = 10, markeredgewidth = 4, label = 'Center')
-		ax.set_aspect('equal')
-		plt.show()

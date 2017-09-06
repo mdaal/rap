@@ -1,4 +1,6 @@
-def _construct_readout_chain(self, F, Include_NA = True, Include_4K_to_40mK = False):
+import numpy as np
+
+def _construct_readout_chain(metadata, F, Include_NA = True, Include_4K_to_40mK = False):
 	'''
 	F is a frequency array.
 	Constructs gain, Tn_m (T noise magnitude), and Tn_p (phase)  lists.
@@ -11,8 +13,8 @@ def _construct_readout_chain(self, F, Include_NA = True, Include_4K_to_40mK = Fa
 	The System_Calibration and Cable_Calibration data are input into metadate at the time of data library creating (in the file Create_Lbrary.py)
 
 	'''
-	SC = self.metadata.System_Calibration # contains Noise powers, gains and P1dB of readout devices
-	CC = self.metadata.Cable_Calibration # cable loss fit coefficients
+	SC = metadata.System_Calibration # contains Noise powers, gains and P1dB of readout devices
+	CC = metadata.Cable_Calibration # cable loss fit coefficients
 
 	# Chain is the string of readout cables and amplifiers/devices
 	chain  = []
@@ -20,18 +22,18 @@ def _construct_readout_chain(self, F, Include_NA = True, Include_4K_to_40mK = Fa
 	if Include_4K_to_40mK:
 		chain.append('4K_to_40mK')
 
-	if self.metadata.LNA['LNA'] is not None:
-		chain.append(self.metadata.LNA['LNA'])
+	if metadata.LNA['LNA'] is not None:
+		chain.append(metadata.LNA['LNA'])
 
 	chain.append('300K_to_4K')
 
-	if self.metadata.RTAmp_In_Use:
-		chain.append(self.metadata.RTAmp) 
+	if metadata.RTAmp_In_Use:
+		chain.append(metadata.RTAmp) 
 
 	
 	chain.append('One_Way_300K')
 
-	if (self.metadata.Atten_NA_Input is not None) and (self.metadata.Atten_NA_Input>0):
+	if (metadata.Atten_NA_Input is not None) and (metadata.Atten_NA_Input>0):
 		chain.append('Atten_NA_Input')
 
 	if Include_NA:
@@ -63,7 +65,7 @@ def _construct_readout_chain(self, F, Include_NA = True, Include_4K_to_40mK = Fa
 			continue
 
 		if device is 'Atten_NA_Input':
-			g =  -np.abs(self.metadata.Atten_NA_Input)*np.ones_like(F)
+			g =  -np.abs(metadata.Atten_NA_Input)*np.ones_like(F)
 			g = np.power(10.0,g/10.0)
 			g_s.append(g)
 			Tn = ((1.0/g)-1)*passive_device_temp[device]

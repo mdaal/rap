@@ -1,7 +1,11 @@
-def trim_loop(self,N = 20,Verbose = True,):
-	import numpy.ma as ma
-	f = f1 = ma.array(self.loop.freq)
-	z = z1 = ma.array(self.loop.z)
+from .utils import _points_removed
+
+import numpy.ma as ma
+import numpy as np
+
+def trim_loop(loop,N= 20, Verbose = True):
+	f = f1 = ma.array(loop.freq)
+	z = z1 = ma.array(loop.z)
 	# estimate resonant freq using resonance dip
 	zr_mag_est = np.abs(z).min()
 	zr_est_index = np.where(np.abs(z)==zr_mag_est)[0][0]
@@ -31,8 +35,8 @@ def trim_loop(self,N = 20,Verbose = True,):
 	z = z2 = ma.masked_where((f > fr_est + N*FWHM_est) | (fr_est - N*FWHM_est > f),z)
 	f = f2 = ma.array(f,mask = z.mask)
 
-	self.loop.z = ma.compressed(z)
-	self.loop.freq = ma.compressed(f)
+	loop.z = ma.compressed(z)
+	loop.freq = ma.compressed(f)
 
 	if Verbose: 
-		print('Bandwidth cut:\n\t{1} points outside of fr_est +/- {0}*FWHM_est removed, {2} remaining data points'.format(N, *self._points_removed(z1,z2)))
+		print('Bandwidth cut:\n\t{1} points outside of fr_est +/- {0}*FWHM_est removed, {2} remaining data points'.format(N, *_points_removed(z1,z2)))

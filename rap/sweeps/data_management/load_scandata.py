@@ -1,26 +1,21 @@
-from ..metadata import metadata
+from .utils import _download_data, _read_scandata_from_file, _extract_type, _define_sweep_data_columns, _define_sweep_array
 
-from data_management.utils import _read_scandata_from_file
-from data_management.utils import _download_data
+import numpy as np
 
-def load_scandata(metadata, _download_data, _read_scandata_from_file, file_location):
+def load_scandata(metadata, file_location, **auth):
 	''' file_location is the locaiton of the scandata.mat file. It can be a URL, filename or /path/filename.
-	assumes that self.data is in the form of matlab ScanData Structure'''
-
-	#delete previous metadata object
-	del(metadata)
-	metadata = metadata()
+	assumes that 'data' is in the form of matlab ScanData Structure'''
 
 	if file_location.startswith('http'):
-		_download_data(file_location)
+		data, metadata.Data_Source = _download_data(file_location, **auth) # auth = {'username':_____ , 'password': ____}
 	else:
-		_read_scandata_from_file(file_location)
+		data, metadata.Data_Source =_read_scandata_from_file(file_location)
 
-	ScanData = self.data['ScanData']
+	ScanData = data['ScanData']
 	
-	# These tags specify the data to pull out of self.data['ScanData']. syntax is 
-	# (field of self.data['ScanData'] to extract, self.metadata name to save to ('key:sub-key' ifself.metadata.key is a dict), 
-	#			 type of value (arrays are None),optional sub-field of self.data['ScanData'] to extract)
+	# These tags specify the data to pull out of data['ScanData']. syntax is 
+	# (field of data['ScanData'] to extract, metadata name to save to ('key:sub-key' if metadata.key is a dict), 
+	#			 type of value (arrays are None),optional sub-field of data['ScanData'] to extract)
 	tags = [('Run','Run', str), ('Start_Date','Fridge_Run_Start_Date',str), ('Location','Test_Location', str), 
 			('Sensor','Sensor',str), ('Ground_Plane','Ground_Plane',str), ('Box','Box',str), ('Press','Press',str), 
 			('Notes','Notes',str),('Time','Time_Created',str),('Temperature','Fridge_Base_Temp',float),
@@ -40,17 +35,17 @@ def load_scandata(metadata, _download_data, _read_scandata_from_file, file_locat
 			if t[1].find(':')>-1: #The case of a dictionary
 				t1 = t[1].split(':')
 
-				#This try/except block is for the case where self.metadata.__dict__['?'] is a dictionary
+				#This try/except block is for the case where metadata.__dict__['?'] is a dictionary
 				try:
-					metadata.__dict__[t1[0]].update([(t1[1],self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])
+					metadata.__dict__[t1[0]].update([(t1[1],_extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])
 				except:
-					metadata.__dict__[t1[0]] = dict([(t1[1],self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])	
+					metadata.__dict__[t1[0]] = dict([(t1[1],_extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])	
 			else:
-				metadata.__dict__[t[1]] = self._extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None)
+				metadata.__dict__[t[1]] = _extract_type(ScanData[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None)
 		except: 
 			#the case that the field does not exist or that its in an unexpected format
 			#print('Field named {0}{1} is not found. Setting value to None'.format(t[0], (':'+t[3]) if len(t) > 3 else '')) # this usesScandata nomenclature
-			print('Field named {0} is not found.'.format(t[1])) # this uses self.metadata nomenclature
+			print('Field named {0} is not found.'.format(t[1])) # this uses metadata nomenclature
 	try:
 		metadata.Powers                = metadata.Powers.squeeze() #for case there are multiples powers
 	except:
@@ -61,10 +56,10 @@ def load_scandata(metadata, _download_data, _read_scandata_from_file, file_locat
 	if hasattr(metadata,'Thermometer_Voltage_Bias'):
 		metadata.Thermometer_Voltage_Bias  = metadata.Thermometer_Voltage_Bias.reshape((metadata.Thermometer_Voltage_Bias.shape[1],))
 
-	if metadata.Thermometer_Configuration is not None:#if self.metadata.Thermometer_Configuration != None:
+	if metadata.Thermometer_Configuration is not None:#if metadata.Thermometer_Configuration != None:
 		metadata.Thermometer_Configuration = (str(metadata.Thermometer_Configuration.squeeze()[0][0]),str(metadata.Thermometer_Configuration.squeeze()[1][0]))
 
-	# Reshape  Heater_Voltage array and  Remove final Heater voltage from self.Heater_Voltage (The final value is just the heater value at which to leave fridge )
+	# Reshape  Heater_Voltage array and  Remove final Heater voltage from Heater_Voltage (The final value is just the heater value at which to leave fridge )
 	metadata.Heater_Voltage = metadata.Heater_Voltage.reshape((metadata.Heater_Voltage.shape[1],))
 	metadata.Heater_Voltage = metadata.Heater_Voltage[0:-1]
 
@@ -91,53 +86,34 @@ def load_scandata(metadata, _download_data, _read_scandata_from_file, file_locat
 				pass
 
 
-	self._define_sweep_data_columns(fsteps,tpoints)
+	sweep_data_columns_list, sweep_data_columns = _define_sweep_data_columns(metadata, fsteps,tpoints)
 
 	
 	metadata.Num_Powers 			= metadata.Powers.size
 	metadata.Num_Heater_Voltages 	= metadata.Heater_Voltage.size
 	metadata.Num_Ranges 			= metadata.Range.shape[0]
-	try:
-		metadata.Cable_Calibration = self._Cable_Calibration
-		print('Cable Calibraiton data found and saved in Sweep_Array metadata.')
-	except:
-		pass
 
-	try:
-		metadata.Temperature_Calibration = self._Temperature_Calibration
-		print('Temperature Calibraiton data found and saved in Sweep_Array metadata.')
-	except:
-		pass
 
 	if metadata.Num_Temperatures > 0:
 		print('Temperature readings found for scan(s). {0} readings per scan'.format(metadata.Num_Temperatures))
-	### Examples of dealing with Freq_Range Data structure imported from Matlab .mat file			
-	#    k.Freq_Range[heater_voltage_num][1]['PowerSweep']
-	# 					  k.Freq_Range[0][1]['PowerSweep']
-	# j.Freq_Range[0][1]['Temp'][0][0][0][1]['PowerSweep']
-	# dt = np.dtype(('O', (2,3)))
-	# entended = np.zeros(0,dtype = dt)
-	# dt = np.dtype(('O',('O',[('Temp',('O',('O')))])))
-	# dt = np.dtype([('O',[('O',[('Temp',[('O',('O'))])])])])
-	# #this is the closest I can come to replecating the structure of a Temp Power Sweep
-	# dt = np.dtype([('O',[('Temp','O',(1,1))],(1,2))])
 
 	
 	i=0
-	self.Sweep_Array = np.zeros(metadata.Heater_Voltage.shape[0]*metadata.Powers.shape[0]*metadata.Freq_Range.shape[0], dtype = self.sweep_data_columns)
+	Sweep_Array = np.zeros(metadata.Heater_Voltage.shape[0]*metadata.Powers.shape[0]*metadata.Freq_Range.shape[0], dtype = sweep_data_columns)
 	for freq_range_num in xrange(metadata.Freq_Range.shape[0]):
 			if metadata.Heater_Voltage.shape[0] == 1:
 				heater_voltages = metadata.Freq_Range # non temp sweep, single freq_range, powersweep
 			else:					
-				heater_voltages = self._extract_type(metadata.Freq_Range[freq_range_num,1]['Temp'])
+				heater_voltages = _extract_type(metadata.Freq_Range[freq_range_num,1]['Temp'])
 			#start here for single res powersweep
 			for heater_voltage_num in xrange(heater_voltages.shape[0]):
-				sweep_powers = self._extract_type(heater_voltages[heater_voltage_num,1], field = 'PowerSweep')
+				sweep_powers = _extract_type(heater_voltages[heater_voltage_num,1], field = 'PowerSweep')
 				for sweep in sweep_powers[:,0:sweep_powers.shape[1]]:
-					self._define_sweep_array(i, Fstart = self.metadata.Range[freq_range_num,0],
-												Fstop = self.metadata.Range[freq_range_num,1],
-												Heater_Voltage = self.metadata.Heater_Voltage[heater_voltage_num],
-												Thermometer_Voltage_Bias = self.metadata.Thermometer_Voltage_Bias[heater_voltage_num] if hasattr(metadata,'Thermometer_Voltage_Bias') else 0,#set to zero unless there is an array of temps in the ScanData
+					_define_sweep_array(Sweep_Array, i, 
+												Fstart = metadata.Range[freq_range_num,0],
+												Fstop = metadata.Range[freq_range_num,1],
+												Heater_Voltage = metadata.Heater_Voltage[heater_voltage_num],
+												Thermometer_Voltage_Bias = metadata.Thermometer_Voltage_Bias[heater_voltage_num] if hasattr(metadata,'Thermometer_Voltage_Bias') else 0,#set to zero unless there is an array of temps in the ScanData
 												Pinput_dB = sweep[0].squeeze()[()] - metadata.Atten_Added_At_NA if metadata.Atten_Added_At_NA != None else sweep[0].squeeze()[()], #we only want the power coming out of the source, i.e. the NA
 												S21 = sweep[1].squeeze()[()],
 												Frequencies = sweep[2].squeeze()[()],
@@ -152,7 +128,6 @@ def load_scandata(metadata, _download_data, _read_scandata_from_file, file_locat
 	del(metadata.__dict__['Range'])
 	del(metadata.__dict__['Freq_Range'])
 
-	# if self.metadata.Atten_NA_Output == None: #redundant to have both
-	# 	del(self.metadata.__dict__['Atten_NA_Output'])
-	# else:
-	# 	del(self.metadata.__dict__['Atten_Added_At_NA'])
+	return sweep_data_columns_list, sweep_data_columns, Sweep_Array
+
+

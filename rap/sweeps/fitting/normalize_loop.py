@@ -1,12 +1,14 @@
-def normalize_loop(self, base = 0, offset = 5):
+import numpy as np
+
+def normalize_loop(loop, base, offset):
 	''' normalize loop so that mag(S21)< 1. determine normalization by averaging np.abs(S21[base:offset]).mean()
 	return normalization'''
-	S21 = self.loop.z
-	f= self.loop.freq	
+	S21 = loop.z
+	f = loop.freq	
 	
 	normalization = np.abs(S21[base:offset]).mean() # consider using medium()?
-	self.loop.normalization = normalization
+	loop.normalization = normalization
 	S21_normalized = S21/normalization
-	self.loop.z = S21_normalized
+	loop.z = S21_normalized
 
 	return normalization 

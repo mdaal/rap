@@ -1,4 +1,16 @@
-def complete_fit(self, Use_Mask = True, Verbose = False , Show_Plot = False, Save_Fig = False, Sample_Size = 100, Use_Loop_Data = False):
+from ..system_calibration.utils import _construct_readout_chain
+from ..visualization.utils import  _save_fig_dec
+
+
+import numpy as np
+import numpy.ma as ma
+from scipy.optimize import minimize
+from scipy import constants
+import matplotlib.pyplot as plt
+
+
+
+def complete_fit(Sweep_Array, metadata, loop, Use_Mask = True, Verbose = False , Show_Plot = False, Save_Fig = False, Sample_Size = 100, Use_Loop_Data = False):
 	'''
 	Sample_Size is the number of points used to extablish \sigma^2 for the gaussian noise model
 
@@ -6,8 +18,8 @@ def complete_fit(self, Use_Mask = True, Verbose = False , Show_Plot = False, Sav
 	'''
 
 
-	if self.loop.index == None:
-		print 'Loop index is not specified. please pick_loop... Aborting'
+	if loop.index == None:
+		print('Loop index is not specified. please pick_loop... Aborting')
 		return
 
 	Fit_Method = 'Multiple'
@@ -18,7 +30,7 @@ def complete_fit(self, Use_Mask = True, Verbose = False , Show_Plot = False, Sav
 
 
 	k = constants.value('Boltzmann constant') #unit is [J/k]
-	BW = self.metadata.IFBW #unit is [Hz]	 
+	BW = metadata.IFBW #unit is [Hz]	 
 	# SC = self.metadata.System_Calibration # contains Noise powers, gains and P1dB of readout devices
 	# CC = self.metadata.Cable_Calibration # cable loss fit coefficients
 	R = 50 #system impedance
@@ -29,21 +41,21 @@ def complete_fit(self, Use_Mask = True, Verbose = False , Show_Plot = False, Sav
 	#
 	#
 	if Use_Mask:
-		F = ma.array(self.Sweep_Array[self.loop.index]['Frequencies'],mask = self.Sweep_Array[self.loop.index]['Mask'])
+		F = ma.array(Sweep_Array[loop.index]['Frequencies'],mask = Sweep_Array[loop.index]['Mask'])
 		F = F.compressed()
-		S21 = ma.array(self.Sweep_Array[self.loop.index]['S21'],mask = self.Sweep_Array[self.loop.index]['Mask'])
+		S21 = ma.array(Sweep_Array[loop.index]['S21'],mask = Sweep_Array[loop.index]['Mask'])
 		S21 = S21.compressed()
 	else:
-		F = self.Sweep_Array[self.loop.index]['Frequencies']
-		S21 = self.Sweep_Array[self.loop.index]['S21']
+		F = Sweep_Array[loop.index]['Frequencies']
+		S21 = Sweep_Array[loop.index]['S21']
 
-	P_NA_out_dB = self.Sweep_Array[self.loop.index]['Pinput_dB'] #'out' as in our of NA, change of reference point
+	P_NA_out_dB = Sweep_Array[loop.index]['Pinput_dB'] #'out' as in our of NA, change of reference point
 	P_NA_out_V2 = .001 * np.power(10,P_NA_out_dB/10) *2 *R 
 	P_NA_in_V2 = np.square(np.abs(S21)) * P_NA_out_V2
 
 
 	#Get chain and Noise temperatures for each element of readout chan and  at each frequency
-	g_s , Tn_m_s ,Tn_p_s = self._construct_readout_chain(F)
+	g_s , Tn_m_s ,Tn_p_s = _construct_readout_chain(metadata, F)
 
 
 	
@@ -62,34 +74,30 @@ def complete_fit(self, Use_Mask = True, Verbose = False , Show_Plot = False, Sav
 
 
 	if Use_Loop_Data == False:
-		#a_0,b_0  = self.Sweep_Array[self.loop.index]['a'], self.Sweep_Array[self.loop.index]['b']
-		R_0        = self.Sweep_Array[self.loop.index]['R']
-		theta_0    = self.Sweep_Array[self.loop.index]['Theta']
-		tau_0    = self.metadata.Electrical_Delay
-		Q_0      = self.Sweep_Array[self.loop.index]['Q']
-		Qc_0     = self.Sweep_Array[self.loop.index]['Qc']
-		fr_0     = self.Sweep_Array[self.loop.index]['Fr'] 
-		phi_0    = self.Sweep_Array[self.loop.index]['Phi']#(self.Sweep_Array[self.loop.index]['Phi'] * np.pi/180) + 0*np.pi
+		R_0        = Sweep_Array[loop.index]['R']
+		theta_0    = Sweep_Array[loop.index]['Theta']
+		tau_0    = metadata.Electrical_Delay
+		Q_0      = Sweep_Array[loop.index]['Q']
+		Qc_0     = Sweep_Array[loop.index]['Qc']
+		fr_0     = Sweep_Array[loop.index]['Fr'] 
+		phi_0    = Sweep_Array[loop.index]['Phi']#(self.Sweep_Array[self.loop.index]['Phi'] * np.pi/180) + 0*np.pi
 		
 	else:
-		#a_0,b_0  = self.loop.a, self.loop.b
-		R_0      = self.loop.R
-		theta_0  = self.loop.theta
-		tau_0    = self.metadata.Electrical_Delay
-		Q_0      = self.loop.Q 
-		Qc_0     = self.loop.Qc 
-		fr_0     = self.loop.fr 
-		phi_0    = self.loop.phi# (self.loop.phi * np.pi/180) + 0*np.pi
+		R_0      = loop.R
+		theta_0  = loop.theta
+		tau_0    = metadata.Electrical_Delay
+		Q_0      = loop.Q 
+		Qc_0     = loop.Qc 
+		fr_0     = loop.fr 
+		phi_0    = loop.phi# (self.loop.phi * np.pi/180) + 0*np.pi
 		
 
 
 
 	#p0 is the initial guess
-	#p0 = np.array([a_0,b_0,tau_0,Q_0, Qc_0, fr_0, phi_0])
 	p0 = np.array([R_0, theta_0,tau_0,Q_0, Qc_0, fr_0, phi_0])
 
 	def obj(x,s21, sigma_squared_m,sigma_squared_p ,freq):# phase / magnitude fit
-		# a,b,tau,Q, Qc, fr, phi= x
 		# s21_fit  = norm * np.exp(np.complex(0.,np.angle(np.complex(a,b)))) * np.exp(np.complex(0,-2*np.pi*tau)*freq) * (1 - (Q/Qc)*np.exp(np.complex(0,phi)) / (1 + np.complex(0,2*Q)*(freq-fr)/fr ) )
 		R,theta,tau,Q, Qc, fr, phi= x
 		s21_fit  =  R * np.exp(np.complex(0.,theta)) * np.exp(np.complex(0,-2*np.pi*tau)*freq) * (1 - (Q/Qc)*np.exp(np.complex(0,phi)) / (1 + np.complex(0,2*Q)*(freq-fr)/fr ) )
@@ -105,7 +113,7 @@ def complete_fit(self, Use_Mask = True, Verbose = False , Show_Plot = False, Sav
 
 	# Dont use masked data to sample points for Gaussian variance determination.
 	if Use_Mask:
-		S21_Sample = self.Sweep_Array[self.loop.index]['S21']
+		S21_Sample = Sweep_Array[loop.index]['S21']
 	else:
 		S21_Sample = S21
 
@@ -168,25 +176,25 @@ def complete_fit(self, Use_Mask = True, Verbose = False , Show_Plot = False, Sav
 
 	cfit = 'cPowell' # phase / mag chi squared 
 	#ca, cb, ctau = fit[cfit].x[0], fit[cfit].x[1], fit[cfit].x[2]
-	self.loop.cR, self.loop.ctheta, ctau = cR, ctheta, ctau = fit[cfit].x[0], fit[cfit].x[1], fit[cfit].x[2]
-	self.loop.cQ = cQ = fit[cfit].x[3]	
-	self.loop.cQc = cQc = fit[cfit].x[4]	
-	self.loop.cQi = cQi = 1.0/ ((1./self.loop.cQ ) - (1./self.loop.cQc )) 
-	self.loop.cfr = cfr = fit[cfit].x[5]	
-	self.loop.cphi = cphi =  fit[cfit].x[6]	
-	self.loop.cchisquare = fit[cfit].fun
-	self.loop.cphase_fit_success = fit[cfit].success
+	loop.cR, loop.ctheta, ctau = cR, ctheta, ctau = fit[cfit].x[0], fit[cfit].x[1], fit[cfit].x[2]
+	loop.cQ = cQ = fit[cfit].x[3]	
+	loop.cQc = cQc = fit[cfit].x[4]	
+	loop.cQi = cQi = 1.0/ ((1./loop.cQ ) - (1./loop.cQc )) 
+	loop.cfr = cfr = fit[cfit].x[5]	
+	loop.cphi = cphi =  fit[cfit].x[6]	
+	loop.cchisquare = fit[cfit].fun
+	loop.cphase_fit_success = fit[cfit].success
 
 	sfit = 'sPowell' #gaussian chi squared
 	#sa, sb, stau = fit[sfit].x[0], fit[sfit].x[1], fit[sfit].x[2]
-	self.loop.sR, self.loop.stheta, stau  =sR, stheta, stau= fit[sfit].x[0], fit[sfit].x[1], fit[sfit].x[2]
-	self.loop.sQ = sQ = fit[sfit].x[3]	
-	self.loop.sQc = sQc = fit[sfit].x[4]	
-	self.loop.sQi = sQi = 1.0/ ((1./self.loop.sQ ) - (1./self.loop.sQc )) 
-	self.loop.sfr = sfr = fit[sfit].x[5]	
-	self.loop.sphi = sphi =  fit[sfit].x[6]	
-	self.loop.schisquare = fit[sfit].fun
-	self.loop.sphase_fit_success = fit[sfit].success
+	loop.sR, loop.stheta, stau  =sR, stheta, stau= fit[sfit].x[0], fit[sfit].x[1], fit[sfit].x[2]
+	loop.sQ = sQ = fit[sfit].x[3]	
+	loop.sQc = sQc = fit[sfit].x[4]	
+	loop.sQi = sQi = 1.0/ ((1./loop.sQ ) - (1./loop.sQc )) 
+	loop.sfr = sfr = fit[sfit].x[5]	
+	loop.sphi = sphi =  fit[sfit].x[6]	
+	loop.schisquare = fit[sfit].fun
+	loop.sphase_fit_success = fit[sfit].success
 
 	fit['sigma_squared_m'] = sigma_squared_m
 	fit['sigma_squared_p'] = sigma_squared_p
@@ -231,7 +239,7 @@ def complete_fit(self, Use_Mask = True, Verbose = False , Show_Plot = False, Sav
 	# 	plt.show()
 
 	if Save_Fig == True:
-		self._save_fig_dec(fig,'Concurrent_Fit_Index_{0}'.format(self.loop.index))
+		_save_fig_dec(metadata,fig,'Concurrent_Fit_Index_{0}'.format(loop.index))
 	
 
 

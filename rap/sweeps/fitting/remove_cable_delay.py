@@ -1,13 +1,21 @@
-def remove_cable_delay(self, Show_Plot = True, Verbose = True, center_freq = None, Force_Recalculate = False):
-	'''
-	If self.metadate.Electrical_Delay is not None, then use this value as cable delay and remove from data 
+import numpy as np
+from scipy.optimize import minimize
+from scipy.interpolate import interp1d
 
-	If self.metadate.Electrical_Delay is None:
+import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
+import matplotlib.gridspec as gridspec
+
+def remove_cable_delay(loop, metadata, Show_Plot = True, Verbose = True, center_freq = None, Force_Recalculate = False):
+	'''
+	If metadate.Electrical_Delay is not None, then use this value as cable delay and remove from data 
+
+	If metadate.Electrical_Delay is None:
 	- Determine cable delay by finding delay value, tau, which minimizes distance between adjacent S21 points. 
-	Then cancel out tau in S21 data and save corrected loop in self.loop.z. Set self.metadate.Electrical_Delay = tau.
+	Then cancel out tau in S21 data and save corrected loop in loop.z. Set metadate.Electrical_Delay = tau.
 	- If S21 is large array, down sample it first before performing minimization
 
-	If self.metadate.Electrical_Delay is None and center_freq is given:
+	If metadate.Electrical_Delay is None and center_freq is given:
 	-If center_freq is given, this function computes the electrical delay by determining the bandwidth over which the S21 
 	circle completes a full revolution starting at center_freq and ending at ~ center_freq + tau^-1. Where tau is approximated
 	as the vaule deterined by minimum  distance above. 
@@ -16,16 +24,21 @@ def remove_cable_delay(self, Show_Plot = True, Verbose = True, center_freq = Non
 
 	Return tau in any case.
 
-	If Force_Recalculate == False Electrical delay will be recalculated and reset in metadata
+	If Force_Recalculate == True Electrical delay will be recalculated and reset in metadata
 	'''
 
-	S21 = self.loop.z
-	f= self.loop.freq
+	# Check for loop data
+	if loop.index == None:
+		print('Loop index is not specified. please pick_loop... Aborting')
+		return
+
+	S21 = loop.z
+	f= loop.freq
 
 	j = np.complex(0,1)
 	n = 1
 
-	if (self.metadata.Electrical_Delay == None) or (Force_Recalculate == True):
+	if (metadata.Electrical_Delay == None) or (Force_Recalculate == True):
 		cable_delay_max = 200e-9 # Seconds - guess as to maximum value of cable delay
 		cable_delay_guess  = 80e-9 # Seconds
 		freq_spacing = np.abs(f[0] - f[1])
@@ -82,7 +95,7 @@ def remove_cable_delay(self, Show_Plot = True, Verbose = True, center_freq = Non
 			cable_delay_winding = 1/winding_bandwidth
 			cable_delay = cable_delay_winding #override cable_delay_min_distance 
 	else:
-		cable_delay = self.metadata.Electrical_Delay
+		cable_delay = metadata.Electrical_Delay
 		center_freq = None
 
 	S21_Corrected = np.exp(2*np.pi*f*j*cable_delay)*S21
@@ -90,10 +103,10 @@ def remove_cable_delay(self, Show_Plot = True, Verbose = True, center_freq = Non
 	if Verbose == True:
 		if n>1:
 			print('S21 downsampled by factor n = {}.'.format(n))
-		if (self.metadata.Electrical_Delay == None) or (Force_Recalculate == True):
+		if (metadata.Electrical_Delay == None) or (Force_Recalculate == True):
 			print('cable delay is {} seconds by minimum distance method'.format(cable_delay_min_distance))	
 		else: 
-			print('cable delay is {} seconds as found in metadata'.format(self.metadata.Electrical_Delay))
+			print('cable delay is {} seconds as found in metadata'.format(metadata.Electrical_Delay))
 		if center_freq is not None:
 			print('cable delay is {} seconds by loop winding method'.format(cable_delay_winding))
 		
@@ -102,7 +115,6 @@ def remove_cable_delay(self, Show_Plot = True, Verbose = True, center_freq = Non
 		fig = plt.figure( figsize=(9,6))#, dpi=150)
 		ax = {}	
 		def plot_loops(ax):
-			from matplotlib.ticker import MaxNLocator
 			majormaxnlocator    = MaxNLocator(nbins = 5)
 			minormaxnlocator    = MaxNLocator(nbins = 5*5)
 			#ax2 = fig.add_subplot(111, aspect='equal')
@@ -137,6 +149,6 @@ def remove_cable_delay(self, Show_Plot = True, Verbose = True, center_freq = Non
 		#plt.setp(fig, tight_layout = True)
 		plt.show()
 
-	self.metadata.Electrical_Delay = cable_delay
-	self.loop.z = S21_Corrected
+	metadata.Electrical_Delay = cable_delay
+	loop.z = S21_Corrected
 	return cable_delay

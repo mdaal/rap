@@ -1,4 +1,14 @@
-def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None, Amplitude_Noise_Variance = None, Like = None, Save_Fig = False,
+from ..data_management.utils import  _define_sweep_data_columns, _define_sweep_array
+from ..system_calibration.utils import _construct_readout_chain
+from ..fitting.nonlinear.utils import _nonlinear_formulae
+from ..visualization.utils import _save_fig_dec
+
+import numpy as np
+import matplotlib.pyplot as plt
+import sys
+
+
+def generate_nonlinear_data(metadata, Show_Plot = True, Phase_Noise_Variance = None, Amplitude_Noise_Variance = None, Like = None, Save_Fig = False,
 	curve_parameter_dict = {'f_0':700e6, 'Qtl':300e3, 'Qc':80e3, 'eta':1e-1, 'delta':1e-6, 'Zfl':30, 'Zres':50, 'phi31': np.pi/2.03, 'phiV1':np.pi/10, 'V30V30':0.01},
 	sweep_parameter_dict = {'Run': 'F1', 'Pprobe_dBm_Start' :-65.0,'Pprobe_dBm_Stop': -25.0, 'Pprobe_Num_Points':10, 'numBW':40,'num': 2000, 'Up_or_Down': 'Up', 'Freq_Spacing':'Linear'}):
 	'''Creates and Loads Nonlinear Data
@@ -12,33 +22,32 @@ def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None
 	sd = sweep_parameter_dict
 
 
-	#delete previous metadata object
-	del(self.metadata)
-	self.metadata = metadata()
-	del(self.loop)
-	self.loop = loop()
-
 	# system_attenuation_before_device = -50 # dB,  Difference between Preadout and Pinput
-	self.metadata.Electrical_Delay = 0.0
-	self.metadata.Feedline_Impedance = cd['Zfl']
-	self.metadata.Resonator_Impedance = cd['Zres']
-	self.metadata.LNA = {}
-	self.metadata.LNA['LNA'] =  'SiGe #1'
-	self.metadata.RTAmp_In_Use = True
-	self.metadata.Atten_At_4K = 40.
-	self.metadata.Atten_NA_Output = 0. 
-	self.metadata.Atten_NA_Input = 0.
+	metadata.Electrical_Delay = 0.0
+	metadata.Feedline_Impedance = cd['Zfl']
+	metadata.Resonator_Impedance = cd['Zres']
+	metadata.LNA = {}
+	metadata.LNA['LNA'] =  'SiGe #1'
+	metadata.RTAmp_In_Use = True
+	metadata.Atten_At_4K = 40.
+	metadata.Atten_NA_Output = 0. 
+	metadata.Atten_NA_Input = 0.
 	Cable_Calibration_Key = 'One_Way_40mK'
-	self.metadata.Cable_Calibration = {}
-	self.metadata.Cable_Calibration[Cable_Calibration_Key] = (0,0,0, 'False Cable', 0, 100e9)
-	self.metadata.IFBW = 1.0
+	metadata.Cable_Calibration = {}
+	metadata.Cable_Calibration[Cable_Calibration_Key] = (0,0,0, 'False Cable', 0, 100e9)
+	metadata.IFBW = 1.0
+	metadata.Num_Temperatures = 0.0
+	metadata.Num_Ranges = 1.0
+	metadata.Num_Powers = sd['Pprobe_Num_Points']
+	metadata.Num_Heater_Voltages = 1.0
 	
+
 	if Like is not None: #would be better to confrim that Like is an instance of KAM.sweep
-			self.metadata.__dict__.update(Like.metadata.__dict__)
+			metadata.__dict__.update(Like.metadata.__dict__)
 		
-	self.metadata.Electrical_Delay = 0
-	self.metadata.Time_Created =   '05/01/2015 12:00:00' # or the current datetime datetime.datetime.now().strftime('%m/%d/%Y %H:%M:%S')
-	self.metadata.Run = sd['Run']
+	metadata.Electrical_Delay = 0
+	metadata.Time_Created =   '05/01/2015 12:00:00' # or the current datetime datetime.datetime.now().strftime('%m/%d/%Y %H:%M:%S')
+	metadata.Run = sd['Run']
 
 
 
@@ -46,8 +55,8 @@ def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None
 
 
 	############################# Cable Calbration
-	k = self.metadata.Cable_Calibration[Cable_Calibration_Key]
-	Preadout = lambda f: k[0]*np.sqrt(f)+k[1]*f+k[2] - self.metadata.Atten_NA_Output - self.metadata.Atten_At_4K
+	k = metadata.Cable_Calibration[Cable_Calibration_Key]
+	Preadout = lambda f: k[0]*np.sqrt(f)+k[1]*f+k[2] - metadata.Atten_NA_Output - metadata.Atten_At_4K
 
 	############################## Make Pprobe Array - This is power at the device.
 	Pprobe_dBm = np.linspace(sd['Pprobe_dBm_Start'],sd['Pprobe_dBm_Stop'], sd['Pprobe_Num_Points'])
@@ -86,7 +95,7 @@ def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None
 
 	#################### Construct gain array
 	if Like is not None: #would be better to confrim that Like is an instance of KAM.sweep
-		g_s , Tn_m_s ,Tn_p_s = self._construct_readout_chain(f) # get the gain chain
+		g_s , Tn_m_s ,Tn_p_s = _construct_readout_chain(metadata, f, Include_NA = True, Include_4K_to_40mK = False)# get the gain chain
 		g = np.prod(g_s, axis = 0) # results in a numpy array  that is the same length as f...  a again for each frequency
 	else:
 		g = np.ones_like(f)
@@ -102,10 +111,10 @@ def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None
 
 
 
-	#################### Initialize and Configure self.Sweep_Array
+	#################### Initialize and Configure Sweep_Array
 	tpoints = 0
-	self._define_sweep_data_columns(f.size,tpoints)
-	self.Sweep_Array = np.zeros(Pprobe_dBm.size, dtype = self.sweep_data_columns) #Sweep_Array holdes all sweep data. Its length is the number of sweeps
+	sweep_data_columns_list, sweep_data_columns = _define_sweep_data_columns(metadata,f.size,tpoints) 
+	Sweep_Array = np.zeros(Pprobe_dBm.size, dtype = sweep_data_columns) #Sweep_Array holdes all sweep data. Its length is the number of sweeps
 
 
 	fig = plt.figure( figsize=(5, 5), dpi=150)
@@ -133,7 +142,7 @@ def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None
 
 		for n in xrange(f.shape[0]):
 			#################### Solve for Resonator amplitude using formulae from 
-			fd = self._nonlinear_formulae(cd, model = 2) #get the nonlinear formulae dict, fd
+			fd = _nonlinear_formulae(cd, model = 2) #get the nonlinear formulae dict, fd
 			coefs = np.array([fd['z1z1'](f[n]), 2*fd['rez1z2c'](f[n]), fd['z2z2'](f[n]), -fd['z3z3'](V1[index])])
 
 
@@ -145,8 +154,9 @@ def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None
 		
 		Pin_dB = Pprobe_dBm[index] - Preadout(cd['f_0'])
 
-		####################  Fill self.Sweep_Array
-		self._define_sweep_array(index, Fstart = f[0], #Hz
+		####################  Fill Sweep_Array
+		_define_sweep_array(Sweep_Array, index, 
+									Fstart = f[0], #Hz
 									Fstop = f[-1], #Hz
 									S21 = S21*np.sqrt(g), # g is power gain. so sqrt(g) is voltage gain #should be np.sqrt(g)*Rprobe_V/Pin_V  <-- _V meand voltage
 									Frequencies = f, #Hz
@@ -166,7 +176,6 @@ def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None
 		
 
 	################ Configure Plot
-	
 	ax[1].set_xlabel(r'$\delta f_0 / f_0$', color='k')
 	ax[1].set_ylabel(r'Mag[$S_{21}$]', color='k')
 	ax[1].yaxis.labelpad = -4
@@ -177,20 +186,15 @@ def generate_nonlinear_data(self,  Show_Plot = True, Phase_Noise_Variance = None
 		ax[k].tick_params(axis='x', labelsize=5)
 	
 	
-
 	if Save_Fig:
-		
 		if Like is not  None:
 			like = '_Like_' + Like.metadata.Run 
 		else:
 			like = ''
-		self._save_fig_dec(fig,'Mock_Data' + like)
+		_save_fig_dec(metadata,fig,'Mock_Data' + like)
 	#plt.subplots_adjust(left=.1, bottom=.1, right=None, top=.95 ,wspace=.4, hspace=.4)
 	ax[1].set_title('Mag Transmission')
 	plt.suptitle('Nonlinear Resonator Plots')
 	plt.show()
 
-	default_index = 0
-	self.pick_loop(default_index)
-
-	return fig, ax
+	return fig, ax, sweep_data_columns_list, sweep_data_columns, Sweep_Array

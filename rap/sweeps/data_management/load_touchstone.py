@@ -1,4 +1,13 @@
-def load_touchstone(metadata, filename, pick_loop = True):
+from .utils import  _define_sweep_data_columns, _define_sweep_array
+from ..sweep_array.pick_loop import pick_loop
+
+import tempfile
+import io
+import numpy as np
+
+
+
+def load_touchstone(metadata, filename):
 	''' The function loads S21 and Freq from  Sonnet .s2p or .s3p files into the Sweep_Array structured np array
 	All Sij are extracted, but only  S21 is saved into Sweep_Array. Future editions of this code might  find need 
 	to load other Sij becuase S21.
@@ -7,12 +16,6 @@ def load_touchstone(metadata, filename, pick_loop = True):
 	current loop.
 	'''
 
-	import tempfile
-	import io
-
-	#delete previous metadata object
-	del(metadata)
-	metadata = metadata()
 
 	dt_s2p = [('Freq', np.float64), ('S11r', np.float64), ('S11i', np.float64), ('S12r', np.float64), ('S12i', np.float64), 
 									('S21r', np.float64), ('S21i', np.float64), ('S22r', np.float64), ('S22i', np.float64)]
@@ -84,12 +87,13 @@ def load_touchstone(metadata, filename, pick_loop = True):
 		Touchstone_Data = np.loadtxt(tmp, dtype=dt, comments='!', delimiter=None, converters=None, skiprows=0, usecols=None, unpack=False, ndmin=0)
 	
 	tpoints = 0
-	self._define_sweep_data_columns(Touchstone_Data.size, tpoints)
+	sweep_data_columns_list, sweep_data_columns = _define_sweep_data_columns(metadata,Touchstone_Data.size, tpoints)
 	j = np.complex(0,1)
 
-	self.Sweep_Array = np.zeros(1, dtype = self.sweep_data_columns)
+	Sweep_Array = np.zeros(1, dtype = sweep_data_columns)
 	
-	self._define_sweep_array(0, Fstart = freq_convert(Touchstone_Data['Freq'].min()), #Hz
+	_define_sweep_array(Sweep_Array, 0, 
+								Fstart = freq_convert(Touchstone_Data['Freq'].min()), #Hz
 								Fstop = freq_convert(Touchstone_Data['Freq'].max()), #Hz
 								S21 = Touchstone_Data['S21r']+j*Touchstone_Data['S21i'],
 								Frequencies = freq_convert(Touchstone_Data['Freq']), #Hz
@@ -103,7 +107,15 @@ def load_touchstone(metadata, filename, pick_loop = True):
 	metadata.Data_Source = filename
 	#self.metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][:-1]-Touchstone_Data['Freq'][1:]).min()
 	metadata.Min_Freq_Resolution = np.abs(Touchstone_Data['Freq'][0] - Touchstone_Data['Freq'][-1])/Touchstone_Data['Freq'].size #use average freq resolution
+	metadata.Num_Temperatures = 0.0
+	metadata.Num_Ranges = 1.0
+	metadata.Num_Powers = 1.0
+	metadata.Num_Heater_Voltages = 1.0
 
 	if pick_loop == True: #since there is only one loop in Sweep_Array, we might as well pick it as the current loop
-		self.pick_loop(0)
+		pick_loop(loop,Sweep_Array,0)
 		#self.normalize_loop()
+
+
+
+	return sweep_data_columns_list, sweep_data_columns, Sweep_Array

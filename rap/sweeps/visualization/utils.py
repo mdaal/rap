@@ -1,7 +1,11 @@
-def _save_fig_dec(self, fig, name, Use_Date = False, Make_PGF = True):
+import os
+import matplotlib.pyplot as plt
+import datetime #<-- use  arrow
+
+def _save_fig_dec(metadata, fig, name, Use_Date = False, Make_PGF = True):
 		os.chdir(Plots_Dir)
-		if self.metadata.Run is not None:
-			name = self.metadata.Run+ '_'+ name  
+		if metadata.Run is not None:
+			name = metadata.Run+ '_'+ name  
 		if Use_Date:
 			name = name + '_'+ datetime.date.today().strftime("%Y%m%d")
 

@@ -69,6 +69,10 @@ class loop:
 		self.schisquare = None
 		self.sphase_fit_success = None
 
+	def copy(self,loop):
+		for key in self.__dict__.keys():
+			self.__dict__[key] = loop.__dict__[key]
+
 
 	def __del__(self):
 		pass

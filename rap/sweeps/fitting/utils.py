@@ -1,4 +1,7 @@
-def _points_removed(self,initial, final):
+import numpy.ma as ma
+import numpy as np
+
+def _points_removed(initial, final):
 	''' Compute and return the number of point removed from inital due to a cut. 
 	return this number and the number of points in final'''
 	try:
@@ -11,7 +14,9 @@ def _points_removed(self,initial, final):
 	except:
 		final_number = final.size
 	return (initial_number - final_number), final_number
-def _angle(self, z, deg = 0, return_offset = False):
+
+
+def _angle(z, deg = 0, return_offset = False):
 	''' 
 	IF Z IS A VECTOR, THEN ANGLE IS SHIFTED WRT FIRST ELEMENT!!!!
 
@@ -35,7 +40,7 @@ def _angle(self, z, deg = 0, return_offset = False):
 	n = 2
 	units = n*np.pi if deg == 0 else n*180
 	try:
-		a = ma.array(a + p*units,mask =z.mask) 
+		a = ma.array(a + p*units, mask =z.mask) 
 	except:
 		a = a + p*units #if z is not a masked array do this
 	

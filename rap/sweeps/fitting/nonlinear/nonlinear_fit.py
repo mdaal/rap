@@ -1,88 +1,103 @@
-def nonlinear_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True, Save_Fig = False, Compute_Chi2 = False, Indexing = (None,None,None)):
+from .utils import _nonlinear_formulae
+from ...sweep_array.pick_loop import pick_loop
+from ...loop import loop
+from ...visualization.utils import _save_fig_dec
+from ..remove_cable_delay import remove_cable_delay 
+from ..decompress_gain  import decompress_gain 
+from ..circle_fit import circle_fit
+from ...system_calibration.utils import _construct_readout_chain
+
+
+import time
+from scipy.stats import chisquare
+import numpy as np
+from scipy import constants
+from scipy.optimize import minimize
+import sys
+
+def nonlinear_fit(metadata, loop, Sweep_Array, Fit_Method = 'Multiple', Verbose = True, Show_Plot = True, Save_Fig = False, Compute_Chi2 = False, Indexing = (None,None,None)):
 	'''
 	The indexing keyword allows for selection of the power sweep to be fit. 
 	If P is the list of powers then Indexing = (Start,Stop,Step) is using only, P[Start,Stop, Step]
 	'''
 
-	from scipy.stats import chisquare
-	import time
+
 	R = 50 #System Impedance
 	k = constants.value('Boltzmann constant') #unit is [J/k]
-	BW = self.metadata.IFBW #unit is [Hz]	 
+	BW = metadata.IFBW #unit is [Hz]	 
 
 	if isinstance(Fit_Method,str): #Allow for single string input for Fit_Method
 	   Fit_Method={Fit_Method}
 
-	if self.loop.index == None:
+	if loop.index == None:
 		print('Loop index not chosen. Setting to 0.')
 		index = 0
-		self.pick_loop(index)
+		pick_loop(loop,Sweep_Array,index)
 
-	Sweep_Array_Record_Index = self.loop.index 
-	V = self.Sweep_Array['Heater_Voltage'][Sweep_Array_Record_Index]
-	Fs = self.Sweep_Array['Fstart'][Sweep_Array_Record_Index]
+	Sweep_Array_Record_Index = loop.index 
+	V = Sweep_Array['Heater_Voltage'][Sweep_Array_Record_Index]
+	Fs = Sweep_Array['Fstart'][Sweep_Array_Record_Index]
 	
 	#### NOTE:  will need to fix for the case of sweeps with  duplicate V .... will involve using np.unique
-	indices = np.where( (self.Sweep_Array['Heater_Voltage'] == V) & ( self.Sweep_Array['Fstart']==Fs))[0]
-	P_min_index = np.where( (self.Sweep_Array['Heater_Voltage'] == V) & ( self.Sweep_Array['Fstart']==Fs) & (self.Sweep_Array['Pinput_dB'] == self.Sweep_Array['Pinput_dB'].min()))[0][0]
+	indices = np.where( (Sweep_Array['Heater_Voltage'] == V) & (Sweep_Array['Fstart']==Fs))[0]
+	P_min_index = np.where( (Sweep_Array['Heater_Voltage'] == V) & ( Sweep_Array['Fstart']==Fs) & (Sweep_Array['Pinput_dB'] == Sweep_Array['Pinput_dB'].min()))[0][0]
 
 	##### Q, Qc, Qtl, fr  - used for initial guess in minimization
 	##### Zfl, Zres - used in minimization, Zfl converts power to voltage			
-	Q   = self.Sweep_Array['Q'][P_min_index]
-	Qc  = self.Sweep_Array['Qc'][P_min_index]
+	Q   = Sweep_Array['Q'][P_min_index]
+	Qc  = Sweep_Array['Qc'][P_min_index]
 
 	Qtl = np.power( (1./Q) - (1./Qc) , -1.)
-	fr = self.Sweep_Array['Fr'][P_min_index]
-	Zfl = self.metadata.Feedline_Impedance
-	Zres = self.metadata.Resonator_Impedance
+	fr = Sweep_Array['Fr'][P_min_index]
+	Zfl = metadata.Feedline_Impedance
+	Zres = metadata.Resonator_Impedance
 
 
 	power_sweep_list = []
 	invalid_power_sweep_list = []
 	start, stop, step = Indexing
 	for index in indices[start:stop:step]: #
-		# Clear out loop
-		del(self.loop)
-		self.loop = loop()
+		loop_i = loop()
 		
-		# Pick new loop
-		self.pick_loop(index)
+		# Pick new loop_i
+		pick_loop(loop_i,Sweep_Array,index)
 
 
 		# Remove Gain Compression
-		self.decompress_gain(Compression_Calibration_Index = -1, Show_Plot = False, Verbose = False)
+		decompress_gain(Sweep_Array, loop_i, metadata, Compression_Calibration_Index = -1, Show_Plot = True, Verbose = True)
+
 		# Normalize Loop
-		Outer_Radius = self.Sweep_Array['R'][index]
+		Outer_Radius = Sweep_Array['R'][index]
 		if (Outer_Radius <= 0) or (Outer_Radius == None):
 			print('Outer loop radius non valid. Using 1')
 			Outer_Radius  = 1
-		self.loop.z = self.loop.z/Outer_Radius
-		#s21_mag = self.normalize_loop()
-
+		loop_i.z = loop_i.z/Outer_Radius
+		
 		# Remove Cable Delay
-		self.remove_cable_delay(Show_Plot = False, Verbose = False)	
+		remove_cable_delay(loop_i, metadata, Show_Plot = True, Verbose = True, center_freq = None, Force_Recalculate = False)
+		
 		# Fit loop to circle
-		self.circle_fit(Show_Plot = False)
+		circle_fit(loop_i)
 
-		Preadout = 0.001*np.power(10, self.Sweep_Array['Preadout_dB'][index]/10.0) #W, Readout power at device
+		Preadout = 0.001*np.power(10, Sweep_Array['Preadout_dB'][index]/10.0) #W, Readout power at device
 		V1 = np.sqrt(Preadout*2*Zfl) #V, Readout amplitude at device
-		mask = self.Sweep_Array['Mask'][index]
-		f = ma.array(self.loop.freq,mask = mask)
-		z = ma.array(self.loop.z,mask = mask)
-		zc = np.complex(self.loop.a,self.loop.b)
+		mask = Sweep_Array['Mask'][index]
+		f = ma.array(loop_i.freq,mask = mask)
+		z = ma.array(loop_i.z,mask = mask)
+		zc = np.complex(loop_i.a,loop_i.b)
 		z = z*np.exp(np.complex(0,-np.angle(zc))) #rotate to real axis, but dont translate to origin 
 
 		f_c = f.compressed()
 		z_c = z.compressed()
 
-		P_NA_out_dB = self.Sweep_Array[index]['Pinput_dB'] #Power out of the network analyzer, change of reference point
+		P_NA_out_dB = Sweep_Array[index]['Pinput_dB'] #Power out of the network analyzer, change of reference point
 		P_NA_out_V2 = .001 * np.power(10,P_NA_out_dB/10) * 2 * R  #Voltage squared out of network analyzer
 
 		if Compute_Chi2 is True: # Calculate variances for Chi2
 
 			#z_c = z_c*Outer_Radius
 			P_NA_in_V2 = np.square(np.abs(z_c)) * P_NA_out_V2
-			g_s , Tn_m_s ,Tn_p_s = self._construct_readout_chain(f_c) # get the gain chain
+			g_s , Tn_m_s ,Tn_p_s = _construct_readout_chain(metadata, f_c) # get the gain chain
 			
 		 	# g_i is the total gain between the device and readout digitizer (Network Analyzer) at the frequency f_i
 			sigma_squared_m = np.zeros_like(f_c)
@@ -100,7 +115,7 @@ def nonlinear_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = Tru
 			sigma_squared_p = np.ones_like(f_c)
 
 
-		if self.Sweep_Array['Is_Valid'][index] == True: 
+		if Sweep_Array['Is_Valid'][index] == True: 
 			power_sweep_list.append((V1,z_c,f_c,sigma_squared_m,sigma_squared_p,P_NA_out_V2,Outer_Radius))
 		else:
 			invalid_power_sweep_list.append((V1,z_c,f_c,sigma_squared_m,sigma_squared_p,P_NA_out_V2,Outer_Radius ))
@@ -121,7 +136,7 @@ def nonlinear_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = Tru
 		''' *** Objective function to be minimized for Chi2 and other fit ***
 		'''
 		parameter_dict = {'f_0':p[0], 'Qtl':p[1], 'Qc':p[2], 'phi31':p[3], 'eta':p[4], 'delta':p[5], 'Zfl':Zfl, 'Zres':Zres,  'phiV1':phiV1, 'V30V30':V30V30} 
-		fd = self._nonlinear_formulae( parameter_dict, model = 2) # get the nonlinear formulae dict, fd 
+		fd = _nonlinear_formulae( parameter_dict, model = 2) # get the nonlinear formulae dict, fd 
 		a,b,phi,tau = p[6:] # geometrical transformation parameters and tau - cable delay
 		
 		sumsq = 0
@@ -221,13 +236,13 @@ def nonlinear_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = Tru
 		ax[1] = plt.subplot(gs[0, :])
 		ax[2] = plt.subplot(gs[1, 0], aspect='equal' )
 		ax[3] = plt.subplot(gs[1, 1])
-		note = (r'Run {run}, Resonator width {width:.0f} $\mu m$'+'\n').format(run = self.metadata.Run, 
-			width = (self.metadata.Resonator_Width if self.metadata.Resonator_Width is not None else 0)/1e-6)
+		note = (r'Run {run}, Resonator width {width:.0f} $\mu m$'+'\n').format(run = metadata.Run, 
+			width = (metadata.Resonator_Width if metadata.Resonator_Width is not None else 0)/1e-6)
 
 		if bestfit != None:
 			p = fit[bestfit].x
 			parameter_dict = {'f_0':p[0], 'Qtl':p[1], 'Qc':p[2], 'phi31':p[3], 'eta':p[4], 'delta':p[5], 'Zfl':Zfl, 'Zres':Zres,  'phiV1':phiV1, 'V30V30':V30V30}
-			fd = self._nonlinear_formulae( parameter_dict, model = 2) # get the nonlinear formulae dict, fd 
+			fd = _nonlinear_formulae( parameter_dict, model = 2) # get the nonlinear formulae dict, fd 
 			a,b,phi,tau = p[6:]
 			vline = ax[1].axvline(x = (parameter_dict['f_0']-fr)/fr,linewidth=1, color='y', linestyle = ':')#,   label = r'$f_{r}$')
 			note = note + (r'$f_0$ = {f_0:3.2e} Hz, $Q_{sub1}$ = {Qtl:3.2e}, $Q_c$ = {Qc:3.2e}' +
@@ -325,7 +340,7 @@ def nonlinear_fit(self, Fit_Method = 'Multiple', Verbose = True, Show_Plot = Tru
 			name  = 'Nonlinear_Fit_' 
 			if Compute_Chi2 is True:
 				name = name  + 'Chi2_'
-			self._save_fig_dec(fig, name + 'Start_Index_'+ str(Sweep_Array_Record_Index))
+			_save_fig_dec(metadata,fig, name + 'Start_Index_'+ str(Sweep_Array_Record_Index))
 		plt.subplots_adjust(top =0.90)
 		plt.suptitle('Fit to Nonlinear Resonator Data', fontweight='bold')
 		plt.show()

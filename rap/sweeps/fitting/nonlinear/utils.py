@@ -1,4 +1,6 @@
-def _nonlinear_formulae(self, parameter_dict, model = 2):
+import numpy as np
+
+def _nonlinear_formulae(parameter_dict, model = 2):
 	''' model 2 is paramterization based on input resonator amplitude V_3^-, e.g.: 
 	parameter_dict = {'f_0':700e6, 'Qtl':300e3, 'Qc':80e3, 'eta':1e-1, 'delta':1e-6, 'Zfl':30, 'Zres':50, 'phi31': np.pi/2.03, 'phiV1':np.pi/10, 'V30V30':}
 	'''
