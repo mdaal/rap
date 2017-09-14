@@ -115,7 +115,7 @@ def _extract_type(obj, return_type = None, field = None):
 				obj = obj[field]
 			except:
 				obj = None
-				print('Field named {0} is not found. Returning None'.format(field))	
+				print('Field named {0} is not found. Cannot extract. Returning None'.format(field))	
 		# try:
 		# 	obj = obj[field]
 		# except:
@@ -175,6 +175,110 @@ def _define_sweep_data_columns(metadata, fsteps, tpoints):
 
 		#("S21_Processed"            , np.complex128, (fsteps,)), # Processed S21 used in phase fit 
 		]
+	sweep_data_columns = np.dtype(sweep_data_columns_list)
+	
+	return sweep_data_columns_list, sweep_data_columns
+
+
+def _compute_noise_spectrum_length(measurement_metadata):
+	'''
+	measurement_metadata is a dict.
+	Computes length of noise spectrum, whcih is needed for 
+	construction of the Sweep_Array data type before measurement of noise.
+	'''
+	frequency_segmentation = measurement_metadata['Noise_Frequency_Segmentation'] 
+	frequency_resolution_per_segment = measurement_metadata['Noise_Frequency_Resolution_Per_Segment'] 
+	noise_spectrum_length = 0
+	for i in xrange(len(frequency_segmentation)):
+		last_segmentation = frequency_segmentation[i-1] if i > 0 else 0 
+		noise_spectrum_length = noise_spectrum_length + (frequency_segmentation[i] - last_segmentation)/frequency_resolution_per_segment[i]
+	#try to get rid of this by correcting KIDS-DAQ-75uW Measurement_Managers code	
+	noise_spectrum_length = noise_spectrum_length if measurement_metadata.has_key('Is_Legacy_Gui_Data') and measurement_metadata['Is_Legacy_Gui_Data'] else noise_spectrum_length - 1
+
+	if divmod(noise_spectrum_length,1)[1] != 0: 
+		ValueError('Noise spectrum length is not an integer is not an integer')
+	return int(noise_spectrum_length)
+
+
+def _define_sweep_data_columns_legacy_gui(measurement_metadata, fsteps_syn = 1):
+	'''
+	in the legacy gui, we use 'Synthesizer_Scan_Num_Points' = fsteps instead of the usual 'NA_Scan_Num_Points'
+	'''
+	#measurement_metadata['NA_Scan_Num_Points'] = fsteps
+	#measurement_metadata['Num_Temperatures']  = tpoints
+	#self.measurement_metadata['Synthesizer_Scan_Num_Points']  = fsteps_syn
+
+
+	if measurement_metadata['Measure_On_Res_Noise']:
+		noise_spectrum_length = _compute_noise_spectrum_length(measurement_metadata)
+	else:
+		noise_spectrum_length = 1
+
+	# off resonance noise vector will be the same length as the on resoance noise vectors, 
+	# unless no off resonance noise it to be measured. In which case, the off resoance noise 
+	# are of length 1
+	if measurement_metadata['Measure_Off_Res_Noise']:
+		noise_spectrum_length_off_res = noise_spectrum_length
+	else:
+		noise_spectrum_length_off_res = 1
+
+	# if tpoints < 1: # we dont want a shape = (0,) array. We want at least (1,)
+	# 	tpoints = 1
+
+	# if fsteps_syn < 1:
+	# 	fsteps_syn = 1
+
+	if noise_spectrum_length < 1:
+		noise_spectrum_length = 1
+
+
+
+	sweep_data_columns_list = [
+		#("Fstart"         			, np.float64), # in Hz
+		#("Fstop"          			, np.float64), # in Hz
+		#("Heater_Voltage" 			, np.float64), # in Volts
+		("Pinput_dB"      			, np.float64), # in dB
+		#("Preadout_dB"     			, np.float64), # in dB  - The power at the input of the resonator, not inside the resonator
+		#("Thermometer_Voltage_Bias"	, np.float64), # in Volts
+		#("Temperature_Readings"    	, np.float64,(tpoints,)), # in Kelvin
+		("Temperature"		    	, np.float64), # in Kelvin
+		#("S21"            			, np.complex128, (fsteps,)), # in complex numbers, experimental values.
+		#("Frequencies"    			, np.float64,(fsteps,)), # in Hz
+		("Is_Valid"					, np.bool),
+		#("Aux_Voltage"				, np.float64), # in Volts
+		#("Aux_Value"				, np.float64), # value of aux signal due to Aux_Voltage, e.g. B-field in gauss if Helmholtz coil is on aux channel
+		("S21_Syn"            		, np.complex128, (fsteps_syn,)), # in complex numbers
+		("Frequencies_Syn"    		, np.float64,(fsteps_syn,)), # in Hz
+		#("Bkgd_Freq_Syn"    		, np.float64,(bkgd_loop_num_pts,)), # in Hz
+		#("Bkgd_S21_Syn"            	, np.complex128, (bkgd_loop_num_pts,)), # in complex numbers
+		("Q"						, np.float64),
+		("Qc"						, np.float64),
+		("Fr"						, np.float64), # in Hz - Res freq estimated from na scan
+		("Power_Baseline_Noise"    	, np.float64), # dBm -  off resonnce power entering digitizer for noise spectrum measurement		
+		("Noise_Freq_On_Res"    	, np.float64), # Hz - freq at which on res noise was taken
+		("Noise_S21_On_Res"         , np.complex128), # The I/Q point at which on res noise was taken
+		#("Noise_S21_Std_On_Res"     , np.complex128), # The standard deviation in the measurement of the I/Q point at which on res noise was taken
+		("Noise_II_On_Res"			, np.float64,(noise_spectrum_length,)), # PSD in V^2/Hz
+		("Noise_QQ_On_Res"			, np.float64,(noise_spectrum_length,)),
+		("Noise_IQ_On_Res"			, np.complex128,(noise_spectrum_length,)),
+		("Noise_Freq_Off_Res"    	, np.float64), # Hz - freq at which off res noise was taken			
+		("Noise_II_Off_Res"			, np.float64,(noise_spectrum_length_off_res,)),
+		("Noise_QQ_Off_Res"			, np.float64,(noise_spectrum_length_off_res,)),
+		("Noise_IQ_Off_Res"			, np.complex128,(noise_spectrum_length_off_res,)),
+		#("Noise_Atten_Mixer_Input"  , np.float32), # actual readings of attenuation value at mixer input (box chan 2) from Attenuator box
+		#("Noise_Atten_Fridge_Input" , np.float32), # actual readings of attenuation value at input to fridge (box chan 1) from Attenuator box
+		("Noise_S21_Off_Res"        , np.complex128), # The I/Q point at which off res noise was taken
+		#("Noise_S21_Std_Off_Res"    , np.complex128), # The standard deviation in the measurement of the I/Q point at which off res noise was taken
+		("Noise_Freq_Vector"    	, np.float64,(noise_spectrum_length,)), # in Hz, the  frequencies of the noise spectrum
+		("Noise_Chan_Input_Atn"		, np.uint32), # attenuator box attenuation value setting for input side of fridge (Atn Box Chan 1)
+		("Noise_Chan_Output_Atn"	, np.uint32), # attenuator box attenuation value setting for output side of fridge (Atn Box Chan2)
+		#phase cancellation value for carrier cuppresion - np.float64,(fsteps_syn,)
+		#ampl cancellation value for carrir suppression -  np.float64,(fsteps_syn,)
+		("Scan_Timestamp"			, '|S12'),
+		("Resonator_Group"			, np.uint32,(3,)), #[groupnumber, res1_index, res2_index]
+		("dZdf"						, np.float64),
+		]
+
 	sweep_data_columns = np.dtype(sweep_data_columns_list)
 	
 	return sweep_data_columns_list, sweep_data_columns

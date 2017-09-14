@@ -9,3 +9,5 @@ class env_var():
 			self.database_location = kword['database_location']
 		else:
 			self.database_location = os.path.expanduser('~') + os.sep + 'Resonator_Data' + os.sep + 'My_Data_Library.h5'
+
+		#self.imported_data_path = None not necessary: using metadate.Data_Source = None
