@@ -275,6 +275,7 @@ def _define_sweep_data_columns_legacy_gui(measurement_metadata, fsteps_syn = 1):
 		#phase cancellation value for carrier cuppresion - np.float64,(fsteps_syn,)
 		#ampl cancellation value for carrir suppression -  np.float64,(fsteps_syn,)
 		("Scan_Timestamp"			, '|S12'),
+		("Resonator_Index"			, np.uint32), #unique number assigned to each unique resonator
 		("Resonator_Group"			, np.uint32,(3,)), #[groupnumber, res1_index, res2_index]
 		("dZdf"						, np.float64),
 		]

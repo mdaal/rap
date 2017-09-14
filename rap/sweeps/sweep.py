@@ -176,7 +176,7 @@ class sweep():
 		sweep_config_xxxxx.mat file in director, then reads this file to dermine from which specXX-YY-ZZ.mat and spec_offresXX-YY-ZZ.mat 
 		files to obtain data.
 
-		### As of 9/13/17: still need to implement CPSD storage in Sweep_Array
+		### As of 9/13/17: still need to implement CPSD and specorth storage in Sweep_Array
 		'''
 
 		#delete previous metadata object
