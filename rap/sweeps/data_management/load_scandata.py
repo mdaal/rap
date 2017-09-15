@@ -128,6 +128,7 @@ def load_scandata(metadata, file_location, **auth):
 	del(metadata.__dict__['Range'])
 	del(metadata.__dict__['Freq_Range'])
 
+	metadata.Loop_Data_Column_Names  = ("Frequencies","S21")
 	return sweep_data_columns_list, sweep_data_columns, Sweep_Array
 
 

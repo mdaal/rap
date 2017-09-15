@@ -186,7 +186,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 								Noise_Chan_Input_Atn = np.float(temp_group_atten_list[2]), 
 								Noise_Chan_Output_Atn = data_dict['curr_config']['totpow'] - np.float(temp_group_atten_list[2]),
 								Scan_Timestamp = dt_time_created.strftime('%Y%m%d%H%M'),
-								Resonator_Index = 2*np.float(temp_group_atten_list[1]) - 1,
+								Resonator_Index = 2*np.float(temp_group_atten_list[1]) - 2,
 								Resonator_Group = np.array([np.float(temp_group_atten_list[1]),i,i+1]),
 								dZdf = on_res['spec1']['dZdf']
 								)
@@ -209,7 +209,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 								Noise_Chan_Input_Atn = np.float(temp_group_atten_list[2]), 
 								Noise_Chan_Output_Atn = data_dict['curr_config']['totpow'] - np.float(temp_group_atten_list[2]),
 								Scan_Timestamp = dt_time_created.strftime('%Y%m%d%H%M'),
-								Resonator_Index = 2*np.float(temp_group_atten_list[1]),
+								Resonator_Index = 2*np.float(temp_group_atten_list[1])-1,
 								Resonator_Group = np.array([np.float(temp_group_atten_list[1]),i-1,i]),
 								dZdf = on_res['spec2']['dZdf']
 								)
@@ -222,7 +222,8 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 
 	### New measurement_metadata keys: 'Save_Time_Series','Is_Legacy_Gui_Data','Measure_On_Res_CPSD'
 	metadata.Data_Source = data_dict['curr_config']['savepath']
-	metadata.Run = 
+	if metadata.Run is None:
+		metadata.Run = metadata.Data_Source.replace(':','').replace('\\','_').replace('//','_')
 	metadata.Meaurement_Duration = dt_duration.total_seconds()
 	metadata.Wait_Time = data_dict['curr_config']['waitfortemp']
 	metadata.Num_Temp_Set_Points = temperature_value_array.size
@@ -230,6 +231,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 	metadata.Electrical_Delay = data_dict['curr_config']['cdel'] * np.power(10.,-9) if data_dict['curr_config']['cdel'] is not None else None
 	metadata.Num_Heater_Voltages = len(temperature_value_array)
 	metadata.Num_Powers = len(output_atten_value_array)
+	metadata.Loop_Data_Column_Names  = ("Frequencies_Syn","S21_Syn")
 	# metadata.Digitizer = 'NI6120'
 	data_dict['measurement_metadata']['IQ_Sample_Rate'] = data_dict['curr_config']['sweeprate']
 	data_dict['measurement_metadata']['Noise_Sample_Rate'] = data_dict['curr_config']['noiserate']

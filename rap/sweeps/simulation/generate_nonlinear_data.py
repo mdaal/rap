@@ -40,7 +40,7 @@ def generate_nonlinear_data(metadata, Show_Plot = True, Phase_Noise_Variance = N
 	metadata.Num_Ranges = 1.0
 	metadata.Num_Powers = sd['Pprobe_Num_Points']
 	metadata.Num_Heater_Voltages = 1.0
-	
+	metadata.Loop_Data_Column_Names  = ("Frequencies","S21")
 
 	if Like is not None: #would be better to confrim that Like is an instance of KAM.sweep
 			metadata.__dict__.update(Like.metadata.__dict__)

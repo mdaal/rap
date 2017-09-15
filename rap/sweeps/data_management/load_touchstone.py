@@ -111,11 +111,6 @@ def load_touchstone(metadata, filename):
 	metadata.Num_Ranges = 1.0
 	metadata.Num_Powers = 1.0
 	metadata.Num_Heater_Voltages = 1.0
-
-	if pick_loop == True: #since there is only one loop in Sweep_Array, we might as well pick it as the current loop
-		pick_loop(loop,Sweep_Array,0)
-		#self.normalize_loop()
-
-
+	metadata.Loop_Data_Column_Names = ("Frequencies","S21")
 
 	return sweep_data_columns_list, sweep_data_columns, Sweep_Array

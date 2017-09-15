@@ -87,6 +87,7 @@ class sweep():
 		self.env_var = env_var(**kword)
 
 
+
 	#def _read_scandata_from_file(self,filename_or_path): Not needed
 
 
@@ -252,7 +253,7 @@ class sweep():
 	def pick_loop(self,index):
 		'''Use this function to pick the current loop/transmission data from withing the Sweep_Array. 
 		Index is the indes number of sweep/loop to be slected as the current loop.'''
-		pick_loop(self.loop,self.Sweep_Array,index)
+		pick_loop(self.metadata, self.loop, self.Sweep_Array,index)
 		
 
 	def normalize_loop(self, base = 0, offset = 5):
