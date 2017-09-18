@@ -3,6 +3,7 @@ Resonator Analysis Package
 
 
 To Do
++ Implement Pulse analysis code
 + Implement Sweep_Array["Resonator_Index"]
 + Phase out Sweep_Array["Fstart"], Sweep_Array["Fstop"],
 + Phase out metadata.Fsteps, metadata.Num_Ranges (replace with num_index?)
