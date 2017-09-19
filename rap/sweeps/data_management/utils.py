@@ -3,15 +3,10 @@
 
 ### external imports
 import scipy.io #for loading .mat file
-import urllib2
 import numpy as np
-import os
+import tempfile
+import requests
 
-def _read_scandata_from_file(filename_or_path):
-		
-	mat = scipy.io.loadmat(filename_or_path)
-
-	return mat, filename_or_path
 
 
 def _download_data(URL, **auth):
@@ -21,60 +16,20 @@ def _download_data(URL, **auth):
 	returns numpy data structure contauning .mat file.
 	deletes local file.'''
 
-
-
 	if 'username' in auth.keys() and 'password' in auth.keys():
-		passman = urllib2.HTTPPasswordMgrWithDefaultRealm()
-		# this creates a password manager
+		response  = requests.get(URL,auth=requests.auth.HTTPBasicAuth(auth['username'],auth['password']))
+	else:
+		response  = requests.get(URL)
 
-		username = auth['username']
-		password = auth['password']
-
-		passman.add_password(None, URL, username, password)
-		# because we have put None at the start it will always
-		# use this username/password combination for  urls
-		# for which `URL` is a super-url
-
-		authhandler = urllib2.HTTPBasicAuthHandler(passman)
-		# create the AuthHandler
-
-		opener = urllib2.build_opener(authhandler)
-
-		urllib2.install_opener(opener)
-		# All calls to urllib2.urlopen will now use our handler
-		# Make sure not to include the protocol in with the URL, or
-		# HTTPPasswordMgrWithDefaultRealm will be very confused.
-		# You must (of course) use it when fetching the page though.
-
-	pagehandle = urllib2.urlopen(URL)
-	# authentication is now handled automatically for us
-
-	#import tempfile # Attempt to download data into a temp file
-	#f = tempfile.NamedTemporaryFile(delete=False)
-	#f.write(pagehandle.read())
-	#f.close()
-	#mat = scipy.io.loadmat(f.name)
-
-	output = open('test.mat','wb')
-	print('Download Initiated...')
-	output.write(pagehandle.read())
-	print('Download Completed...')
-	output.close()
-	#global mat
-	mat = scipy.io.loadmat('test.mat')
-	
-
-	#this id how to tell what variables are stored in test.mat
-	#print scipy.io.whosmat('test.mat')
+	if not response.ok:
+		#make this an exception
+		print('URL is not serving data.')
 
 
-
-	#html = pagehandle.read()
-	#pagehandle.close()
-
-	#soup = BeautifulSoup(html)
-	#soup.contents
-	os.remove('test.mat')
+	with tempfile.NamedTemporaryFile() as tmp:
+		tmp.write(response.content)
+		tmp.seek(0,0)
+		mat = scipy.io.loadmat(tmp.name)
 	return mat, URL
 	
 def _extract_type(obj, return_type = None, field = None):

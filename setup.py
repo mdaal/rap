@@ -96,7 +96,7 @@ setup(
 					'scipy>=0.17.0',
 					'matplotlib>=1.4.3',
 					'sys','os','io','datetime','tempfile', 'logging', 'time',
-					'urllib2>=2.7',
+					'requests>=2.14.2',
 					'tables>=3.2.0',
 					'pytest>=3.1.3'],
 
