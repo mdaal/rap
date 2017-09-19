@@ -1,5 +1,6 @@
-from .utils import _download_data, _read_scandata_from_file, _extract_type, _define_sweep_data_columns, _define_sweep_array
+from .utils import _download_data, _extract_type, _define_sweep_data_columns, _define_sweep_array
 
+import scipy.io 
 import numpy as np
 
 def load_scandata(metadata, file_location, **auth):
@@ -9,8 +10,9 @@ def load_scandata(metadata, file_location, **auth):
 	if file_location.startswith('http'):
 		data, metadata.Data_Source = _download_data(file_location, **auth) # auth = {'username':_____ , 'password': ____}
 	else:
-		data, metadata.Data_Source =_read_scandata_from_file(file_location)
-
+		data = scipy.io.loadmat(file_location)
+		metadata.Data_Source = file_location
+		
 	ScanData = data['ScanData']
 	
 	# These tags specify the data to pull out of data['ScanData']. syntax is 
