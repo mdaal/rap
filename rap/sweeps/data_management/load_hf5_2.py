@@ -1,4 +1,4 @@
-from utils import  _define_sweep_data_columns
+from .utils import  _define_sweep_data_columns
 
 import tables
 import os

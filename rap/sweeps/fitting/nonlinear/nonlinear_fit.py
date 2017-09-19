@@ -201,7 +201,7 @@ def nonlinear_fit(metadata, loop, Sweep_Array, Fit_Method = 'Multiple', Verbose 
 	
 	finished = time.time()
 	elapsed = (finished - start )/60.0 #minutes
-	print 'Minimization took {:.2f} minutes'.format(elapsed)
+	print('Minimization took {:.2f} minutes'.format(elapsed))
 	
 
 	if fit.keys() != []: #if there is a fit object in the fit dictionary
@@ -217,7 +217,7 @@ def nonlinear_fit(metadata, loop, Sweep_Array, Fit_Method = 'Multiple', Verbose 
 
 
 	if Verbose == True:
-		print fit[bestfit]
+		print(fit[bestfit])
 	
 	if Show_Plot == True:
 		#Determine Sweep Direction

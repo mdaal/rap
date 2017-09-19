@@ -99,7 +99,7 @@ def phase_fit(loop, env_var, Fit_Method = 'Multiple', Verbose = True, Show_Plot 
 		r_fraction_in = r_fraction_in - 0.02
 		r_cutoff_in  = r_fraction_in*r
 		z = z3 = ma.masked_where((np.abs(z2)<r_cutoff_in) | (np.abs(z2)>r_cutoff_out),z2, copy = True)
-		print 'loosening inner radius cut: r_fraction_in = {}'.format(r_fraction_in)
+		print('loosening inner radius cut: r_fraction_in = {}'.format(r_fraction_in))
 		if r_fraction_in <= 0:
 			break
 	f = f3 = ma.array(f,mask = z.mask)

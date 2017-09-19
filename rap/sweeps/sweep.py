@@ -11,49 +11,49 @@ from .thermometry import thermometry
 ### subdirectory imports
 
 ### data_management
-from data_management.construct_hf5_toc import construct_hf5_toc
-from data_management.load_hf5 import load_hf5
-from data_management.load_hf5_2 import load_hf5_2
-from data_management.load_scandata import load_scandata
-from data_management.load_touchstone import load_touchstone
-from data_management.save_hf5 import save_hf5
-from data_management.load_legacy_sweep_gui_data import load_legacy_sweep_gui_data
-# from data_management.utils import _read_scandata_from_file
-# from data_management.utils import _download_data
-# from data_management.utils import _extract_type
-# from data_management.utils import _define_sweep_data_columns
-# from data_management.utils import _define_sweep_array
+from .data_management.construct_hf5_toc import construct_hf5_toc
+from .data_management.load_hf5 import load_hf5
+from .data_management.load_hf5_2 import load_hf5_2
+from .data_management.load_scandata import load_scandata
+from .data_management.load_touchstone import load_touchstone
+from .data_management.save_hf5 import save_hf5
+from .data_management.load_legacy_sweep_gui_data import load_legacy_sweep_gui_data
+# from .data_management.utils import _read_scandata_from_file
+# from .data_management.utils import _download_data
+# from .data_management.utils import _extract_type
+# from .data_management.utils import _define_sweep_data_columns
+# from .data_management.utils import _define_sweep_array
 
 ###------------------------------------------------------------
 ### fitting
-from fitting.circle_fit import circle_fit
-from fitting.complete_fit import complete_fit
-from fitting.decompress_gain import decompress_gain
-from fitting.downsample_loop import downsample_loop
-from fitting.normalize_loop import normalize_loop
-from fitting.phase_fit import phase_fit
-from fitting.remove_cable_delay import remove_cable_delay
-from fitting.trim_loop import trim_loop
-# from fitting.utils import _points_removed
-# from fitting.utils import _angle
+from .fitting.circle_fit import circle_fit
+from .fitting.complete_fit import complete_fit
+from .fitting.decompress_gain import decompress_gain
+from .fitting.downsample_loop import downsample_loop
+from .fitting.normalize_loop import normalize_loop
+from .fitting.phase_fit import phase_fit
+from .fitting.remove_cable_delay import remove_cable_delay
+from .fitting.trim_loop import trim_loop
+# from .fitting.utils import _points_removed
+# from .fitting.utils import _angle
 
-from fitting.nonlinear.nonlinear_fit import nonlinear_fit
-# from fitting.nonlinear.utils import _nonlinear_formulae
+from .fitting.nonlinear.nonlinear_fit import nonlinear_fit
+# from .fitting.nonlinear.utils import _nonlinear_formulae
 
 ###------------------------------------------------------------
 ### simulation
-from simulation.generate_nonlinear_data import generate_nonlinear_data
+from .simulation.generate_nonlinear_data import generate_nonlinear_data
 
 ###------------------------------------------------------------
 ### sweep_array
-from sweep_array.fill_sweep_array import fill_sweep_array
-from sweep_array.sweep_array_info import sweep_array_info
-from sweep_array.pick_loop import pick_loop
+from .sweep_array.fill_sweep_array import fill_sweep_array
+from .sweep_array.sweep_array_info import sweep_array_info
+from .sweep_array.pick_loop import pick_loop
 ###------------------------------------------------------------
 ### system_calibration
 
-from system_calibration.fit_cable_loss import fit_cable_loss
-from system_calibration.fit_system_calibration import fit_system_calibration
+from .system_calibration.fit_cable_loss import fit_cable_loss
+from .system_calibration.fit_system_calibration import fit_system_calibration
 # from system_calibration.utils import _construct_readout_chain
 
 ###------------------------------------------------------------
@@ -63,8 +63,8 @@ from system_calibration.fit_system_calibration import fit_system_calibration
 ###------------------------------------------------------------
 ### visualization 
 # from visualization._save_fig_dec import _save_fig_dec
-from visualization.plot_loop import plot_loop
-from visualization.plot_transmission import plot_transmission
+from .visualization.plot_loop import plot_loop
+from .visualization.plot_transmission import plot_transmission
 
 ###------------------------------------------------------------
 ### external packages

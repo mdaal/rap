@@ -1,6 +1,13 @@
+import io
+from scipy.signal import gaussian,wiener, filtfilt, butter,  freqz
+from scipy.ndimage import filters
+from scipy.interpolate import UnivariateSpline
+
+
 class thermometry:
 	def __init__(self):
 		pass
+	
 	def load_MonitoringVI_file(self, filename, temp_list = None, process_therm = 1):
 		'''Reads in thermometer data text file created by  MonitoringVI, and plots the temperature as a function of time.
 		
@@ -11,10 +18,7 @@ class thermometry:
 		plotted.
 		'''
    
-		import io
-		from scipy.signal import gaussian,wiener, filtfilt, butter,  freqz
-		from scipy.ndimage import filters
-		from scipy.interpolate import UnivariateSpline
+
 		pos = filename.rfind(os.sep)
 
 		try:
@@ -30,14 +34,14 @@ class thermometry:
 			print('Unable to find or read Make_ScanData.m for list of heater voltages')
 			Voltages = 'Unknown'
 
- 		with io.open(filename,mode='r') as f:
- 			
- 			temp_data_header = ''
- 			while temp_data_header.strip() =='':
- 				temp_data_header = f.readline()
+		with io.open(filename,mode='r') as f:
+			
+			temp_data_header = ''
+			while temp_data_header.strip() =='':
+				temp_data_header = f.readline()
 
- 			therm_list = [t for t in temp_data_header.strip().split('\t')[1:] if (t.strip() != 'None') & (t.strip() != '')]
- 			
+			therm_list = [t for t in temp_data_header.strip().split('\t')[1:] if (t.strip() != 'None') & (t.strip() != '')]
+			
 
 		temp_data = np.loadtxt(filename, dtype=np.float, comments='#', delimiter=None, converters=None, skiprows=3, usecols=None, unpack=False, ndmin=0)
 		

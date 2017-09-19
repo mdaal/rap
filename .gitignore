@@ -1,5 +1,7 @@
 #ignore .h5 files
 *.h5
+*.s2p
+*.s3p
 
 
 # Byte-compiled / optimized / DLL files

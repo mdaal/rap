@@ -9,4 +9,4 @@ print("rap level init")
 # instead of:
 # 	import rap 
 # 	swp = rap.sweeps.sweep.sweep()
-from sweeps.sweep import sweep
+from .sweeps.sweep import sweep
