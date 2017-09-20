@@ -125,7 +125,7 @@ class sweep():
 	# def _define_sweep_array(self,index,**field_names): Not needed
 
 
-	def load_scandata(self, file_location):
+	def load_scandata(self, file_location, Verbose = True, **auth):
 		''' file_location is the locaiton of the scandata.mat file. It can be a URL, filename or /path/filename.
 		assumes that self.data is in the form of matlab ScanData Structure
 
@@ -135,7 +135,7 @@ class sweep():
 		del(self.metadata)
 		self.metadata = metadata()
 
-		self.sweep_data_columns_list, self.sweep_data_columns, self.Sweep_Array = load_scandata(self.metadata, file_location)
+		self.sweep_data_columns_list, self.sweep_data_columns, self.Sweep_Array = load_scandata(self.metadata, file_location, Verbose  = Verbose, **auth)
 
 		try:
 			metadata.Cable_Calibration = self._Cable_Calibration

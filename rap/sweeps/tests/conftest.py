@@ -1,17 +1,17 @@
 # go to directory containing rap pckage
-# issue command 'pytest -v' for verbose or -s for silent
+# issue command 'pytest -v' for verbose or -s for silent or -vv -s for showing all print() statements
 
 from ..sweep import sweep
 
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture(scope="session") # the returned fixture value will be shared for all tests needing it
 def SWP(request): # create a sweep object
-	print('Creating a sweep object')
+	print('Creating a global sweep object')
 	swp = sweep()
 	def fin():
-		print('Deleting the sweep object')
+		print('Deleting the global sweep object')
 	request.addfinalizer(fin)
 	return swp
 	

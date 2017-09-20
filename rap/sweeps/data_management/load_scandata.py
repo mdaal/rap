@@ -3,7 +3,7 @@ from .utils import _download_data, _extract_type, _define_sweep_data_columns, _d
 import scipy.io 
 import numpy as np
 
-def load_scandata(metadata, file_location, **auth):
+def load_scandata(metadata, file_location, Verbose = True, **auth):
 	''' file_location is the locaiton of the scandata.mat file. It can be a URL, filename or /path/filename.
 	assumes that 'data' is in the form of matlab ScanData Structure'''
 
@@ -12,7 +12,7 @@ def load_scandata(metadata, file_location, **auth):
 	else:
 		data = scipy.io.loadmat(file_location)
 		metadata.Data_Source = file_location
-		
+
 	ScanData = data['ScanData']
 	
 	# These tags specify the data to pull out of data['ScanData']. syntax is 
@@ -55,8 +55,12 @@ def load_scandata(metadata, file_location, **auth):
 
 	
 	# Remove nested array for Thermometer_Voltage_Bias data, if this data exists
-	if hasattr(metadata,'Thermometer_Voltage_Bias'):
-		metadata.Thermometer_Voltage_Bias  = metadata.Thermometer_Voltage_Bias.reshape((metadata.Thermometer_Voltage_Bias.shape[1],))
+	if hasattr(metadata,'Thermometer_Voltage_Bias'): #get rid of hasattr. metadata, is initialized with Thermometer_Voltage_Bias so it always have it.
+		if (metadata.Thermometer_Voltage_Bias is None):
+			del(metadata.__dict__['Thermometer_Voltage_Bias'])
+		else:
+			metadata.Thermometer_Voltage_Bias  = metadata.Thermometer_Voltage_Bias.reshape((metadata.Thermometer_Voltage_Bias.shape[1],))		
+	
 
 	if metadata.Thermometer_Configuration is not None:#if metadata.Thermometer_Configuration != None:
 		metadata.Thermometer_Configuration = (str(metadata.Thermometer_Configuration.squeeze()[0][0]),str(metadata.Thermometer_Configuration.squeeze()[1][0]))
@@ -65,9 +69,9 @@ def load_scandata(metadata, file_location, **auth):
 	metadata.Heater_Voltage = metadata.Heater_Voltage.reshape((metadata.Heater_Voltage.shape[1],))
 	metadata.Heater_Voltage = metadata.Heater_Voltage[0:-1]
 
-
-	print('Loading Run: {0}'.format(metadata.Run))
-	print('There are {0} heater voltage(s), {1} input power(s), and {2} frequecy span(s)'.format(metadata.Heater_Voltage.shape[0],metadata.Powers.shape[0], metadata.Freq_Range.shape[0]))
+	if Verbose: 
+		print('Loading Run: {0}'.format(metadata.Run))
+		print('There are {0} heater voltage(s), {1} input power(s), and {2} frequecy span(s)'.format(metadata.Heater_Voltage.shape[0],metadata.Powers.shape[0], metadata.Freq_Range.shape[0]))
 	heater_voltage_num = 0; power_sweep_num = 0; fsteps = 0; tpoints = 0;
 
 	# determine fsteps = length of the freq/S21 array
@@ -96,7 +100,7 @@ def load_scandata(metadata, file_location, **auth):
 	metadata.Num_Ranges 			= metadata.Range.shape[0]
 
 
-	if metadata.Num_Temperatures > 0:
+	if Verbose and metadata.Num_Temperatures > 0:
 		print('Temperature readings found for scan(s). {0} readings per scan'.format(metadata.Num_Temperatures))
 
 	
