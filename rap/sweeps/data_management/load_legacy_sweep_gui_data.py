@@ -4,6 +4,7 @@ import numpy as np
 import scipy.io 
 import datetime
 import os
+import warnings
 
 def load_legacy_sweep_gui_data(metadata, gui_data_path):
 	data_dir = gui_data_path 
@@ -244,8 +245,9 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 	data_dict['measurement_metadata']['Save_Time_Series'] = bool(data_dict['curr_config']['saveraw'])
 
 	if len(missing_spectra_filename) > 0:
-		print('The following datafiles are expected but missing from the directory:')
-		print(missing_spectra_filename)
+		# print('The following datafiles are expected but missing from the directory:')
+		# print(missing_spectra_filename)
+		warnings.warn('The following datafiles are expected but missing from the directory: {}'.format(missing_spectra_filename),UserWarning)
 
 	return sweep_data_columns_list, sweep_data_columns, Sweep_Array 
 	# data_dict['curr_config']['heater_box'] <-- The 'turn off heater box' option

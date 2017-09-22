@@ -12,7 +12,9 @@ class env_var():
 			self.database_location = os.path.expanduser('~') + os.sep + 'Resonator_Data' + os.sep + 'My_Data_Library.h5'
 
 
-
+		# Configure MatPlotLib...
+		# - set interactive plotting (figs dont block command line)
+		# - configure pgf formatting
 		pgf_with_pdflatex = {
 			"interactive": True,
 			"pgf.texsystem": "pdflatex",

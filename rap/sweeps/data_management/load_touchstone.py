@@ -17,13 +17,19 @@ def load_touchstone(metadata, filename):
 	'''
 
 
-	dt_s2p = [('Freq', np.float64), ('S11r', np.float64), ('S11i', np.float64), ('S12r', np.float64), ('S12i', np.float64), 
-									('S21r', np.float64), ('S21i', np.float64), ('S22r', np.float64), ('S22i', np.float64)]
+	dt_s2p = [('Freq', np.float64), ('S11a', np.float64), ('S11b', np.float64), ('S12a', np.float64), ('S12b', np.float64), 
+									('S21a', np.float64), ('S21b', np.float64), ('S22a', np.float64), ('S22b', np.float64)]
 	
-	dt_s3p = [('Freq', np.float64), ('S11r', np.float64), ('S11i', np.float64), ('S12r', np.float64), ('S12i', np.float64), ('S13r', np.float64), ('S13i', np.float64),
-									('S21r', np.float64), ('S21i', np.float64), ('S22r', np.float64), ('S22i', np.float64), ('S23r', np.float64), ('S23i', np.float64),
-									('S31r', np.float64), ('S31i', np.float64), ('S32r', np.float64), ('S32i', np.float64), ('S33r', np.float64), ('S33i', np.float64)] 
+	dt_s3p = [('Freq', np.float64), ('S11a', np.float64), ('S11b', np.float64), ('S12a', np.float64), ('S12b', np.float64), ('S13a', np.float64), ('S13b', np.float64),
+									('S21a', np.float64), ('S21b', np.float64), ('S22a', np.float64), ('S22b', np.float64), ('S23a', np.float64), ('S23b', np.float64),
+									('S31a', np.float64), ('S31b', np.float64), ('S32a', np.float64), ('S32b', np.float64), ('S33a', np.float64), ('S33b', np.float64)] 
 
+	j = np.complex(0,1)
+	data_format_converter_dict = {  'RI': lambda Sij_r, Sij_i: Sij_r + j*Sij_i, 
+									'MA': lambda Sij_m, Sij_a: Sij_m * np.exp(j*np.pi/180 * Sij_a), 
+									'DB': lambda Sij_mdb, Sij_a: np.power(10,Sij_mdb/20.0) * np.exp(j*np.pi/180 * Sij_a)
+									 }
+	
 
 	with tempfile.TemporaryFile() as tmp:
 		with io.open(filename, mode='r') as f:
@@ -32,6 +38,7 @@ def load_touchstone(metadata, filename):
 			indented = False
 			prev_line = ''
 			m = 1. # for frequency base conversion
+			data_format = '' # The sparameter data format. Might be RI, MA, DB
 			while 1: 
 				line  = f.readline().replace('\n','')
 
@@ -47,8 +54,18 @@ def load_touchstone(metadata, filename):
 					tmp.write(line + '\n')
 				elif line[0] == '#':
 					line  = line.replace('#','!#')
-					if line.find('GHZ') >=-1:
+					split_line = line.split(' ')
+					if 'GHZ' in split_line:
 						m = 1.0e9
+					if 'S' not in split_line: # Check that file contatins S-parameters
+						raise ValueError('Not an S-parameter file.')
+					S_index = split_line.index('S')	# he sparameter data format is declared next in split_line list
+					if split_line[S_index+1] not in data_format_converter_dict.keys():
+						raise ValueError('The S-parameter file is "{}" format. Should be "RI" (preferred), "MA", or "DB" format.'.format(split_line[S_index+1]))
+					else:
+						data_format = split_line[S_index+1]
+						
+						
 					freq_convert = lambda s: s*m #Convert to Hertz
 					tmp.write(line + '\n')	
 				
@@ -88,14 +105,14 @@ def load_touchstone(metadata, filename):
 	
 	tpoints = 0
 	sweep_data_columns_list, sweep_data_columns = _define_sweep_data_columns(metadata,Touchstone_Data.size, tpoints)
-	j = np.complex(0,1)
+	
 
 	Sweep_Array = np.zeros(1, dtype = sweep_data_columns)
 	
 	_define_sweep_array(Sweep_Array, 0, 
 								Fstart = freq_convert(Touchstone_Data['Freq'].min()), #Hz
 								Fstop = freq_convert(Touchstone_Data['Freq'].max()), #Hz
-								S21 = Touchstone_Data['S21r']+j*Touchstone_Data['S21i'],
+								S21 = data_format_converter_dict[data_format](Touchstone_Data['S21a'],Touchstone_Data['S21b']),
 								Frequencies = freq_convert(Touchstone_Data['Freq']), #Hz
 								#Pinput_dB = 0,
 								Is_Valid = True,
