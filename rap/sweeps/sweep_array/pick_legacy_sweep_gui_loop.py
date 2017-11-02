@@ -9,7 +9,9 @@ def pick_legacy_sweep_gui_loop(metadata, loop,Sweep_Array,index_tuple):
 			XX is the Temp in milliKelvin
 			YY is group number of the pair
 			ZZ is the attenuator setting going toward the cryostat
-			----> index_tuple = (XX, YY, ZZ, i) and i is 0 or 1'''
+			----> index_tuple = (XX, YY, ZZ, i) and i is 0 or 1
+
+			issue the command obj.pick_legacy_sweep_gui_loop( (XX, YY, ZZ, i) ) to load that loop.'''
 
 	if len(index_tuple) is not 4:
 		raise ValueError('index_tuple is length {}. length 4 expected.'.format(len(index_tuple)) )

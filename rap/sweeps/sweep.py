@@ -265,7 +265,9 @@ class sweep():
 				XX is the Temp in milliKelvin
 				YY is group number of the pair
 				ZZ is the attenuator setting going toward the cryostat
-				----> index_tuple = (XX, YY, ZZ, i) and i is 0 or 1'''
+				----> index_tuple = (XX, YY, ZZ, i) and i is 0 or 1
+
+		issue the command obj.pick_legacy_sweep_gui_loop( (XX, YY, ZZ, i) ) to load that loop.'''
 		pick_legacy_sweep_gui_loop(self.metadata, self.loop, self.Sweep_Array,index_tuple)
 
 	def normalize_loop(self, base = 0, offset = 5):
@@ -301,15 +303,18 @@ class sweep():
 		return  cable_delay
 
 
-	def trim_loop(self,N = 20,Verbose = True,):
+	def trim_loop(self,N = 20,Verbose = True,Use_Dip = True):
 		''' Find resonance frequency of transmission dip, estimate FWHM, then cut all point
 		greater than N*FWHM on upper and lower side of transmission min. 
 
 		do this to masked array.
+
+		IF Use_Dip = True,  estimate Resonance frequency using minimum Dip 
+		if Use_Dip = False, estimate Resonance frequencymax adjacent distance
 		'''
 
 		#add error if N < 1
-		trim_loop(self.loop, N, Verbose)
+		trim_loop(self.loop, N, Verbose, Use_Dip)
 
 	# def _points_removed(self,initial, final): Not needed
 
