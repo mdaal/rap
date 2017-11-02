@@ -37,7 +37,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 			('curr_config','curr_config:startatten', np.float, 'startatten'),
 			('curr_config','curr_config:stopatten', np.float, 'stopatten'),
 			('curr_config','curr_config:stepatten', np.float, 'stepatten'),
-			('curr_config','curr_config:totpow', np.float, 'totpow'), #this is the total attenuation 
+			('curr_config','curr_config:totpow', np.float, 'totpow'), #this is the total attenuation applied (input + output) in dB
 			('curr_config','curr_config:numsteps', np.float, 'numsteps'), #number of freq steps within 'span'
 			('curr_config','curr_config:samplestoavg', np.float, 'samplestoavg'), # number of samples to avg for IQ sweep
 			('curr_config','curr_config:span', np.float, 'span'), #the freq span, in MHz for fixed span scan
@@ -87,7 +87,6 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 				#print('Field named {0}{1} is not found. Setting value to None'.format(t[0], (':'+t[3]) if len(t) > 3 else '')) # this usesScandata nomenclature
 				print('Field named {0} is not found.'.format(t[1])) # this uses metadata nomenclature
 	_unpack_data_structure(config_tags, data_dict, config)
-
 
 
 	#Now extract the creation time and Date in format : 'Wed Aug 09 17:15:14 2017'
@@ -184,8 +183,8 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 								Noise_IQ_Off_Res = off_res['spec1']['Piqall'].flatten() if data_dict['measurement_metadata']['Measure_Off_Res_Noise'] else 0,
 								Noise_S21_Off_Res = on_res['traj1']['zr'] if data_dict['measurement_metadata']['Measure_Off_Res_Noise'] else 0,
 								Noise_Freq_Vector = on_res['spec1']['wall'].flatten(), 
-								Noise_Chan_Input_Atn = np.float(temp_group_atten_list[2]), 
-								Noise_Chan_Output_Atn = data_dict['curr_config']['totpow'] - np.float(temp_group_atten_list[2]),
+								Noise_Chan_Input_Atn = np.float(temp_group_atten_list[2]), #atten 1 from matlab code, 'input' side of fridge
+								Noise_Chan_Output_Atn = np.max([data_dict['curr_config']['totpow'] - np.float(temp_group_atten_list[2]),0]), #CANNOT BE NEGATIVE!! atten 2 from matlab code
 								Scan_Timestamp = dt_time_created.strftime('%Y%m%d%H%M'),
 								Resonator_Index = 2*np.float(temp_group_atten_list[1]) - 2,
 								Resonator_Group = np.array([np.float(temp_group_atten_list[1]),i,i+1]),
@@ -208,7 +207,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 								Noise_S21_Off_Res = on_res['traj2']['zr'] if data_dict['measurement_metadata']['Measure_Off_Res_Noise'] else 0,
 								Noise_Freq_Vector = on_res['spec2']['wall'].flatten(), 
 								Noise_Chan_Input_Atn = np.float(temp_group_atten_list[2]), 
-								Noise_Chan_Output_Atn = data_dict['curr_config']['totpow'] - np.float(temp_group_atten_list[2]),
+								Noise_Chan_Output_Atn = np.max([data_dict['curr_config']['totpow'] - np.float(temp_group_atten_list[2]),0]),
 								Scan_Timestamp = dt_time_created.strftime('%Y%m%d%H%M'),
 								Resonator_Index = 2*np.float(temp_group_atten_list[1])-1,
 								Resonator_Group = np.array([np.float(temp_group_atten_list[1]),i-1,i]),
