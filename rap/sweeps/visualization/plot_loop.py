@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-def plot_loop(metadata, loop, aspect='auto', show = True):
+def plot_loop(metadata, loop, aspect='equal', show = True):
 	''' Plots currently selected complex transmission in the I,Q plane. Reutrns a tuple, (fig, ax, line),
 	where  fig is the figure object, ax is the axes object and line is the line object for the plotted data.
 

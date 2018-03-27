@@ -95,7 +95,7 @@ class sweep():
 	#def _download_data(self, URL): Not needed
 		
 
-	def plot_loop(self,  aspect='auto', show = True):
+	def plot_loop(self,  aspect='equal', show = True):
 		''' Plots currently selected complex transmission in the I,Q plane. Reutrns a tuple, (fig, ax, line),
 		where  fig is the figure object, ax is the axes object and line is the line object for the plotted data.
 

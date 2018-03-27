@@ -3,6 +3,8 @@ Resonator Analysis Package
 
 
 To Do
++ Add comma to Qi, Qc , Q in phase fit plot to make it easier to read
++ Add option to specify frequency interval in trim_loop and/or center freq so that multiple loops in a sweep can be ignored. 
 + Enable Python 3.6 compatability
 + Implement Pulse analysis code
 + Fully Implement Sweep_Array["Resonator_Index"]
