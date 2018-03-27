@@ -3,12 +3,19 @@ from .utils import _points_removed
 import numpy.ma as ma
 import numpy as np
 
-def trim_loop(loop,N= 20, Verbose = True):
+def trim_loop(loop,N= 20, Verbose = True, Use_Dip = True):
     f = f1 = ma.array(loop.freq)
     z = z1 = ma.array(loop.z)
-    # estimate resonant freq using resonance dip
-    zr_mag_est = np.abs(z).min()
-    zr_est_index = np.where(np.abs(z)==zr_mag_est)[0][0]
+
+
+    #Estimate Resonance frequency using minimum Dip or max adjacent distance
+    if Use_Dip:
+        zr_mag_est = np.abs(z).min()
+        zr_est_index = np.where(np.abs(z)==zr_mag_est)[0][0]
+    else:
+        z_adjacent_distance = np.abs(z[:-1]-z[1:])
+        zr_est_index = np.argmax(z_adjacent_distance) 
+        zr_mag_est = z[zr_est_index]
 
     # estimate max transmission mag using max valuse of abs(z)
     z_max_mag = np.abs(z).max()
