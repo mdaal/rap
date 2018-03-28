@@ -15,10 +15,11 @@ def test_load_touchstone(SWP):
     SWP.load_touchstone(filename_b)
     assert True
 
-def test_download_data():
-    mat, filename_or_path = _download_data(url_a)
-    # print(mat)
-    assert isinstance(mat, dict) and ('ScanData' in mat.keys())
+# cosmology server decomissioned
+# def test_download_data():
+#     mat, filename_or_path = _download_data(url_a)
+#     # print(mat)
+#     assert isinstance(mat, dict) and ('ScanData' in mat.keys())
 
 def test_load_scandata(SWP):
     SWP.load_scandata(filename_c, Verbose = False)

@@ -25,41 +25,46 @@ def load_touchstone(metadata, filename):
                                     ('S31a', np.float64), ('S31b', np.float64), ('S32a', np.float64), ('S32b', np.float64), ('S33a', np.float64), ('S33b', np.float64)]
 
     j = np.complex(0,1)
-    data_format_converter_dict = {  'RI': lambda Sij_r, Sij_i: Sij_r + j*Sij_i,
-                                    'MA': lambda Sij_m, Sij_a: Sij_m * np.exp(j*np.pi/180 * Sij_a),
-                                    'DB': lambda Sij_mdb, Sij_a: np.power(10,Sij_mdb/20.0) * np.exp(j*np.pi/180 * Sij_a)
+    data_format_converter_dict = {  b'RI': lambda Sij_r, Sij_i: Sij_r + j*Sij_i,
+                                    # BUG: 'MA': lambda Sij_m, Sij_a: Sij_m * np.exp(j*np.pi/180 * Sij_a),
+                                    b'DB': lambda Sij_mdb, Sij_a: np.power(10,Sij_mdb/20.0) * np.exp(j*np.pi/180 * Sij_a)
                                      }
 
 
-    with tempfile.TemporaryFile() as tmp:
-        with io.open(filename, mode='r') as f:
+    # if type(b'bytes') is str:
+    #     kwargs = {}
+    # else:
+    #     kwargs = {'mode': 'w', 'encoding': 'utf-8'}
+    kwargs = {}
+    with tempfile.TemporaryFile(**kwargs) as tmp:
+        with io.open(filename, mode='rb') as f:
             # The following while loop copies the .sNp file into a temp file, which is destroyed when closed,
             # such that the tmp file is formated in the way np.loadtxt can read the data.
             indented = False
-            prev_line = ''
+            prev_line = b''
             m = 1. # for frequency base conversion
-            data_format = '' # The sparameter data format. Might be RI, MA, DB
+            data_format = b'' # The sparameter data format. Might be RI, MA, DB
             while 1:
-                line  = f.readline().replace('\n','')
+                line  = f.readline().replace(b'\n',b'')
 
                 pos = f.tell()
-                if line == '': # End of file is reached
+                if line == b'': # End of file is reached
                     break
-                elif line.startswith('! Data File Written:'): # Save as Metadata
-                    metadata.Time_Created = str(line.split('! Data File Written:')[1].strip())
-                    tmp.write(line + '\n')
-                elif line.startswith('! From Project:') | line.startswith('! From Emgraph Data:'): # Save as Metadata
-                    metadata.Run = str(line.split(':')[1].strip())
+                elif line.startswith(b'! Data File Written:'): # Save as Metadata
+                    metadata.Time_Created = str(line.split(b'! Data File Written:')[1].strip())
+                    tmp.write(line + b'\n')
+                elif line.startswith(b'! From Project:') | line.startswith(b'! From Emgraph Data:'): # Save as Metadata
+                    metadata.Run = str(line.split(b':')[1].strip())
                     #self.metadata.IS_Sonnet_Simulation = True
-                    tmp.write(line + '\n')
-                elif line[0] == '#':
-                    line  = line.replace('#','!#')
-                    split_line = line.split(' ')
-                    if 'GHZ' in split_line:
+                    tmp.write(line + b'\n')
+                elif line[0] == '#' or (type(line) is not str and line[0] == 35):
+                    line  = line.replace(b'#',b'!#')
+                    split_line = line.split(b' ')
+                    if b'GHZ' in split_line:
                         m = 1.0e9
-                    if 'S' not in split_line: # Check that file contatins S-parameters
+                    if b'S' not in split_line: # Check that file contatins S-parameters
                         raise ValueError('Not an S-parameter file.')
-                    S_index = split_line.index('S')    # he sparameter data format is declared next in split_line list
+                    S_index = split_line.index(b'S')    # he sparameter data format is declared next in split_line list
                     if split_line[S_index+1] not in data_format_converter_dict.keys():
                         raise ValueError('The S-parameter file is "{}" format. Should be "RI" (preferred), "MA", or "DB" format.'.format(split_line[S_index+1]))
                     else:
@@ -67,10 +72,10 @@ def load_touchstone(metadata, filename):
 
 
                     freq_convert = lambda s: s*m #Convert to Hertz
-                    tmp.write(line + '\n')
+                    tmp.write(line + b'\n')
 
-                elif line[0] == ' ': # in S matrix definition block
-                    prev_line = prev_line + ' ' + line.strip() + ' '
+                elif line[0] == b' ': # in S matrix definition block
+                    prev_line = prev_line + b' ' + line.strip() + b' '
                     next_line = f.readline()
                     # if next line is NOT indented date, then S matrix definition block is finished
                     # and we write it to tmp on a single line.
@@ -78,22 +83,22 @@ def load_touchstone(metadata, filename):
                     # for .s3p files, the S matrix is defined in three lines. second two are indented.
 
                     # if not ((next_line[0] == '') | (next_line[0] == ' ')): # Changing this line to be consistent with line below...
-                    if not ((next_line == '') or (next_line[0] == ' ')):
+                    if not ((next_line == b'') or (next_line[0] == b' ')):
                         tmp.write(prev_line)
-                        tmp.write('\n')
-                        prev_line = ''
+                        tmp.write(b'\n')
+                        prev_line = b''
                     f.seek(pos,0)
 
-                elif line[0] == '!':
-                    tmp.write(line + '\n')
+                elif line[0] == b'!':
+                    tmp.write(line + b'\n')
 
                 else:
                     tmp.write(line)
                     next_line = f.readline()
                     # add \n to line if it does not begin a S matrix definition block
                     # if not ((next_line[0] == '') | (next_line[0] == ' ')): # Changed on 7/11/17 bc Nick was have problems reading in .s2p files
-                    if not ((next_line == '') or (next_line[0] == ' ')):
-                        tmp.write('\n')
+                    if not ((next_line == b'') or (next_line[0] == b' ')):
+                        tmp.write(b'\n')
                     f.seek(pos,0)
 
         tmp.seek(0,0)
@@ -101,7 +106,7 @@ def load_touchstone(metadata, filename):
             dt = dt_s2p
         elif filename.endswith('.s3p'):
             dt = dt_s3p
-        Touchstone_Data = np.loadtxt(tmp, dtype=dt, comments='!', delimiter=None, converters=None, skiprows=0, usecols=None, unpack=False, ndmin=0)
+        Touchstone_Data = np.loadtxt(tmp, dtype=dt, comments=['!', '#'], delimiter=None, converters=None, skiprows=0, usecols=None, unpack=False, ndmin=0)
 
     tpoints = 0
     sweep_data_columns_list, sweep_data_columns = _define_sweep_data_columns(metadata,Touchstone_Data.size, tpoints)

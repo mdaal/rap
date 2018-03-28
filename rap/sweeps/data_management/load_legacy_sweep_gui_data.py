@@ -15,11 +15,15 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
     lastest_sweep_config_modification_time = 0.0
     for file in file_list:
         if file.startswith('sweep_config'):
-            #time of last modificaiton as a float which is approximately seconds since last epoch according to system clock
-            mod_time = os.stat(data_dir + os.sep + file).st_mtime
-            if  mod_time >= lastest_sweep_config_modification_time:
-                lastest_sweep_config_modification_time = mod_time
+            parts = file.replace('.', '_').split('_')
+            if len(parts) == 3:
                 config_file = data_dir + os.sep + file
+                break
+            elif len(parts) == 4:
+                lastest_sweep_config_modification_time = parts[2]
+                if parts[2] >= lastest_sweep_config_modification_time:
+                    lastest_sweep_config_modification_time = parts[2]
+                    config_file = data_dir + os.sep + file
 
     config  = scipy.io.loadmat(config_file)
 
@@ -160,7 +164,10 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
                 spectra  = scipy.io.loadmat(spectra_filename)
                 _unpack_data_structure(unpack_dict[filename_prefix][0],unpack_dict[filename_prefix][1],  spectra)
             else:
-                missing_spectra_filename.append(spectra_filename_prefixes + filename_suffix)
+                missing_spectra_filename.append(filename_prefix + filename_suffix)
+                continue
+        if filename_prefix + filename_suffix in missing_spectra_filename:
+            continue
         temp_group_atten_list = filename_suffix.replace('.mat', '').split('-')
 
         ### get time/date the on_res file was created and then store it as a datetime object.
