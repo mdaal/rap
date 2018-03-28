@@ -44,7 +44,7 @@ def _construct_readout_chain(metadata, F, Include_NA = True, Include_4K_to_40mK 
     Tn_p_s = []
     Tn_m_s = []
     g_s = []
-    for i in xrange(len(chain)):
+    for i in range(len(chain)):
         device = chain[i]
 
         if device in CC.keys():

@@ -69,7 +69,7 @@ def fill_sweep_array(metadata, Sweep_Array, Fit_Resonances = True, Compute_Pread
 
     loop_i = loop()
     num_records = Sweep_Array.size
-    for index in xrange(num_records):
+    for index in range(num_records):
         if Verbose == True:
             sys.stdout.write('\r {0} of {1} '.format(index+1, num_records))
             sys.stdout.flush()

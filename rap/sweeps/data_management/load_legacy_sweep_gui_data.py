@@ -71,7 +71,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
         [(fieldname_in_struct_to_be_unpacked, destination_key_in_receiving_dict, format_in_receiving_dict, [optional  subfieldname_in_struct_to_be_unpacked]),...]
         '''
         for t in tags:
-            try:
+            # try:
                 if t[1].find(':')>-1: #The case of a dictionary
                     t1 = t[1].split(':')
 
@@ -82,15 +82,17 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
                         receiving_dict[t1[0]] = dict([(t1[1],_extract_type(struct_to_be_unpacked[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None))])
                 else:
                     receiving_dict[t[1]] = _extract_type(struct_to_be_unpacked[t[0]], return_type = t[2],field = t[3] if len(t) > 3 else None)
-            except:
+            # except:
                 #the case that the field does not exist or that its in an unexpected format
                 #print('Field named {0}{1} is not found. Setting value to None'.format(t[0], (':'+t[3]) if len(t) > 3 else '')) # this usesScandata nomenclature
-                print('Field named {0} is not found.'.format(t[1])) # this uses metadata nomenclature
+            #     print('Field named {0} is not found.'.format(t[1])) # this uses metadata nomenclature
     _unpack_data_structure(config_tags, data_dict, config)
 
 
     #Now extract the creation time and Date in format : 'Wed Aug 09 17:15:14 2017'
     data_dict['curr_config']['Time_Created'] = data_dict['curr_config']['Time_Created'][data_dict['curr_config']['Time_Created'].find('Created on: ')+len('Created on: '):]
+    if data_dict['curr_config']['Time_Created'][-1] == "'":
+        data_dict['curr_config']['Time_Created'] = data_dict['curr_config']['Time_Created'][:-1]
     dt_start = datetime.datetime.strptime(data_dict['curr_config']['Time_Created'], '%a %b %d %H:%M:%S %Y')
     #Note: spec_settings qlist f0list are arrays
 
@@ -113,10 +115,10 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
     temperature_value_array = np.arange(data_dict['curr_config']['starttemp'],data_dict['curr_config']['stoptemp']+data_dict['curr_config']['steptemp'],data_dict['curr_config']['steptemp'])
 
     ### Construct list of resonant frequency groups in the form [(group1res1, group1res2),(group2res1, group2res2), ...]
-    resonator_group_list = [(np.float(data_dict['curr_config']['f0list'][0+c,0][0]), np.float(data_dict['curr_config']['f0list'][1+c,0][0]))  for c in xrange(0,data_dict['curr_config']['f0list'].shape[0],2) ]
+    resonator_group_list = [(np.float(data_dict['curr_config']['f0list'][0+c,0][0]), np.float(data_dict['curr_config']['f0list'][1+c,0][0]))  for c in range(0,data_dict['curr_config']['f0list'].shape[0],2) ]
 
     ### might want to sort the list of suffixes!
-    spectra_filename_suffixes = ['{temp:.0f}-{resonator_group_num}-{start_atten:.0f}.mat'.format(temp = t, resonator_group_num = rg, start_atten = sa) for t in temperature_value_array for  rg in xrange(1,len(resonator_group_list)+1) for  sa in output_atten_value_array] # note that '{start_atten:.0f}' means don't include a decimal point
+    spectra_filename_suffixes = ['{temp:.0f}-{resonator_group_num}-{start_atten:.0f}.mat'.format(temp = t, resonator_group_num = rg, start_atten = sa) for t in temperature_value_array for  rg in range(1,len(resonator_group_list)+1) for  sa in output_atten_value_array] # note that '{start_atten:.0f}' means don't include a decimal point
     spectra_filename_prefixes = ['spec', 'spec_offres'] if data_dict['measurement_metadata']['Measure_Off_Res_Noise'] else ['spec']
 
     missing_spectra_filename = list()
@@ -163,6 +165,8 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 
         ### get time/date the on_res file was created and then store it as a datetime object.
         on_res['Time_Created'] = on_res['Time_Created'][on_res['Time_Created'].find('Created on: ')+len('Created on: '):]
+        if on_res['Time_Created'][-1] == "'":
+            on_res['Time_Created'] = on_res['Time_Created'][:-1]
         dt_time_created = datetime.datetime.strptime(on_res['Time_Created'], '%a %b %d %H:%M:%S %Y')
 
         ### find max time interval between on_res file creation and measurement start time, to be used to compute total measurement duration

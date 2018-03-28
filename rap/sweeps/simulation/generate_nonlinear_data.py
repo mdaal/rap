@@ -134,13 +134,13 @@ def generate_nonlinear_data(metadata, Show_Plot = True, Phase_Noise_Variance = N
 
 
     print('Generating False Data...')
-    for index in xrange(Pprobe_dBm.size):
+    for index in range(Pprobe_dBm.size):
         sys.stdout.write('\r {0} of {1} '.format(index+1, Pprobe_dBm.size))
         sys.stdout.flush()
         Phase_Noise = np.zeros_like(f) if Phase_Noise_Variance is None else np.random.normal(scale = np.sqrt(Phase_Noise_Variance), size=f.shape)
         Amplitude_Noise = np.zeros_like(f) if Amplitude_Noise_Variance is None else np.random.normal(scale = np.sqrt(Amplitude_Noise_Variance), size=f.shape)
 
-        for n in xrange(f.shape[0]):
+        for n in range(f.shape[0]):
             #################### Solve for Resonator amplitude using formulae from
             fd = _nonlinear_formulae(cd, model = 2) #get the nonlinear formulae dict, fd
             coefs = np.array([fd['z1z1'](f[n]), 2*fd['rez1z2c'](f[n]), fd['z2z2'](f[n]), -fd['z3z3'](V1[index])])

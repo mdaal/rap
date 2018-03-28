@@ -63,7 +63,7 @@ def complete_fit(Sweep_Array, metadata, loop, Use_Mask = True, Verbose = False ,
     sigma_squared_p = np.zeros_like(F)
     n = len(g_s)
 
-    for i in xrange(n):
+    for i in range(n):
         s2_m = 4*k*Tn_m_s[i]*R*BW # This sigma for the particular stage of the readout chain
         s2_p = 4*k*Tn_p_s[i]*R*BW
         #we assume s2_p * 4 * P_NA_in_V2 = s2_m ,  s2_p measured in radian^2
@@ -118,7 +118,7 @@ def complete_fit(Sweep_Array, metadata, loop, Use_Mask = True, Verbose = False ,
         S21_Sample = S21
 
     sigma_squared = 0
-    for i in xrange(Sample_Size):
+    for i in range(Sample_Size):
         sigma_squared = sigma_squared + np.square(np.abs(S21_Sample[i] - S21_Sample[i+1]))
     sigma_squared = sigma_squared/(2.0*Sample_Size)
 

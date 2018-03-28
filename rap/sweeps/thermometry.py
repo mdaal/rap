@@ -79,7 +79,7 @@ class thermometry:
 
 
         color_incr = 1.0/(num_col-start_col)
-        for therm_num in xrange(start_col, num_col): # plot all thermometer data present
+        for therm_num in range(start_col, num_col): # plot all thermometer data present
             line = ax.plot(temp_data[:,0], temp_data[:,therm_num],color=(0,color_incr*therm_num,0), alpha = 0.4 if therm_num != 1 else 1, linewidth = 3,label = therm_list.pop(0) if therm_list[0] != None else 'Therm{0}'.format(therm_num))
 
         #plot filter outputs for THE FIRST thermometer only

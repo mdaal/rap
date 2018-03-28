@@ -104,7 +104,7 @@ def nonlinear_fit(metadata, loop, Sweep_Array, Fit_Method = 'Multiple', Verbose 
             sigma_squared_p = np.zeros_like(f_c)
             n = len(g_s)
 
-            for i in xrange(n):
+            for i in range(n):
                 s2_m = 4*k*Tn_m_s[i]*R*BW # This sigma for the particular stage of the readout chain
                 s2_p = 4*k*Tn_p_s[i]*R*BW
                 #we assume s2_p * 4 * P_NA_in_V2 = s2_m ,  s2_p measured in radian^2
@@ -275,7 +275,7 @@ def nonlinear_fit(metadata, loop, Sweep_Array, Fit_Method = 'Multiple', Verbose 
                 S21_fit = np.empty_like(f,dtype = np.complex128)
                 V3_fit = np.empty_like(f,dtype = np.complex128)
 
-                for n in xrange(f.shape[0]):
+                for n in range(f.shape[0]):
                     coefs = np.array([fd['z1z1'](f[n]), 2*fd['rez1z2c'](f[n]), fd['z2z2'](f[n]), -fd['z3z3'](V1exp)])
                     V3V3[n] =np.ma.array(np.roots(coefs),mask= np.iscomplex(np.roots(coefs)),fill_value = 1)
                     V3V3_cubic[n]    = extreme(np.extract(~V3V3[n].mask,V3V3[n])).real

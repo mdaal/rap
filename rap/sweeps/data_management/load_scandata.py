@@ -82,7 +82,7 @@ def load_scandata(metadata, file_location, Verbose = True, **auth):
         except:
             pass
     else:
-        for freq_range_num in xrange(metadata.Freq_Range.shape[0]):
+        for freq_range_num in range(metadata.Freq_Range.shape[0]):
             steps = metadata.Freq_Range[freq_range_num][1]['Temp'][0][0][heater_voltage_num][1]['PowerSweep'][0][0][power_sweep_num][2].squeeze()[()].size
             fsteps = max(steps,fsteps)
             try: # Try to determine the number of temperture readings per scan. If data does not contain temp readings, pass
@@ -106,13 +106,13 @@ def load_scandata(metadata, file_location, Verbose = True, **auth):
 
     i=0
     Sweep_Array = np.zeros(metadata.Heater_Voltage.shape[0]*metadata.Powers.shape[0]*metadata.Freq_Range.shape[0], dtype = sweep_data_columns)
-    for freq_range_num in xrange(metadata.Freq_Range.shape[0]):
+    for freq_range_num in range(metadata.Freq_Range.shape[0]):
             if metadata.Heater_Voltage.shape[0] == 1:
                 heater_voltages = metadata.Freq_Range # non temp sweep, single freq_range, powersweep
             else:
                 heater_voltages = _extract_type(metadata.Freq_Range[freq_range_num,1]['Temp'])
             #start here for single res powersweep
-            for heater_voltage_num in xrange(heater_voltages.shape[0]):
+            for heater_voltage_num in range(heater_voltages.shape[0]):
                 sweep_powers = _extract_type(heater_voltages[heater_voltage_num,1], field = 'PowerSweep')
                 for sweep in sweep_powers[:,0:sweep_powers.shape[1]]:
                     _define_sweep_array(Sweep_Array, i,

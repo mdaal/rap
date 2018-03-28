@@ -62,7 +62,7 @@ def _extract_type(obj, return_type = None, field = None):
         while obj.dtype == np.dtype('O'):
             obj = obj.item()
 
-        if isinstance(obj.item(), unicode):
+        if isinstance(obj.item(), str):
             obj = None
             print('Expected dictionary containing field named {0} is not found. Returning None'.format(field))
         else: #if the object does not simply contain a string, e.g  [u'InP #2'], do this
@@ -144,11 +144,11 @@ def _compute_noise_spectrum_length(measurement_metadata):
     frequency_segmentation = measurement_metadata['Noise_Frequency_Segmentation']
     frequency_resolution_per_segment = measurement_metadata['Noise_Frequency_Resolution_Per_Segment']
     noise_spectrum_length = 0
-    for i in xrange(len(frequency_segmentation)):
+    for i in range(len(frequency_segmentation)):
         last_segmentation = frequency_segmentation[i-1] if i > 0 else 0
         noise_spectrum_length = noise_spectrum_length + (frequency_segmentation[i] - last_segmentation)/frequency_resolution_per_segment[i]
     #try to get rid of this by correcting KIDS-DAQ-75uW Measurement_Managers code
-    noise_spectrum_length = noise_spectrum_length if measurement_metadata.has_key('Is_Legacy_Gui_Data') and measurement_metadata['Is_Legacy_Gui_Data'] else noise_spectrum_length - 1
+    noise_spectrum_length = noise_spectrum_length if ('Is_Legacy_Gui_Data' in measurement_metadata) and measurement_metadata['Is_Legacy_Gui_Data'] else noise_spectrum_length - 1
 
     if divmod(noise_spectrum_length,1)[1] != 0:
         ValueError('Noise spectrum length is not an integer is not an integer')
