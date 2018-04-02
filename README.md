@@ -17,3 +17,13 @@ To Do
 + Implement more fit options
 + Implement fit uncertainty/error 
 + Setup logging and exception handling
+
+
+
+
+Resonance Fitting Methods:
+- 'Diameter Correction Method' of Khalil et al. 2012  https://doi.org/10.1063/1.3692073
+- Fitting error estimation of Probst et al. 2015 https://doi.org/10.1063/1.4907935
+- Circle fit methods: ChernovHoussam, ChernovLesort, LevenbergMarquardtFull, LevenbergMarquardtReduced (wrap cpp code in python); some have signal to noise estimate code
+- 'CPZM' method of Deng et al. https://doi.org/10.1063/1.4817512  (linear fractional transformation where coefficients also give circuit element values)
+- Signal to noise est, 3dB method, Lorentzian Fit method, resonance curve area  method, inverse mapping technique, Snortland* method, (radial weighting) of Petersan et al. https://doi.org/10.1063/1.368498
