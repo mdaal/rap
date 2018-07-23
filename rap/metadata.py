@@ -43,6 +43,7 @@ class metadata:
         self.Num_Temp_Set_Points = None #For systems where the fridge temp is controlled by PID. number of temperature set points during the measurement
         self.Plot_Preferences = None #A list of plot preferences for the sweep
         self.Loop_Data_Column_Names = None #To be set as a tuple (frequency_column_name,S21_column_name), both column names are strings, to be used with pick_loop() is invoked
+        self.Trace_Data_Column_Names = None #To be set as a tuple to be used with pick_legacy_pulse_gui_channel() is invoked
 
         # manual entry metadata
         self.Electrical_Delay = None # Seconds ---  computed at time of data library generation

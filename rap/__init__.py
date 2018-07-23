@@ -10,3 +10,4 @@ print("rap level init")
 #     import rap
 #     swp = rap.sweeps.sweep.sweep()
 from .sweeps.sweep import sweep
+from .pulses.pulse import pulse

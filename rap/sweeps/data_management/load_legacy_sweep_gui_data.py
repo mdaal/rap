@@ -12,7 +12,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 
     ### Find Latest sweep_config_xxxxx.mat file in data_dir
     file_list = os.listdir(data_dir)
-    lastest_sweep_config_modification_time = 0.0
+    lastest_sweep_config_modification_time = 0
     for file in file_list:
         if file.startswith('sweep_config'):
             parts = file.replace('.', '_').split('_')
@@ -20,9 +20,9 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
                 config_file = data_dir + os.sep + file
                 break
             elif len(parts) == 4:
-                lastest_sweep_config_modification_time = parts[2]
-                if parts[2] >= lastest_sweep_config_modification_time:
-                    lastest_sweep_config_modification_time = parts[2]
+                lastest_sweep_config_modification_time = int(parts[2])
+                if int(parts[2]) >= lastest_sweep_config_modification_time:
+                    lastest_sweep_config_modification_time = int(parts[2])
                     config_file = data_dir + os.sep + file
 
     config  = scipy.io.loadmat(config_file)
@@ -242,7 +242,10 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
     metadata.Electrical_Delay = data_dict['curr_config']['cdel'] * np.power(10.,-9) if data_dict['curr_config']['cdel'] is not None else None
     metadata.Num_Heater_Voltages = len(temperature_value_array)
     metadata.Num_Powers = len(output_atten_value_array)
-    metadata.Loop_Data_Column_Names  = ("Frequencies_Syn","S21_Syn")
+    metadata.Loop_Data_Column_Names = ("Frequencies_Syn", "S21_Syn")
+    metadata.Noise_Sample_Rate = data_dict['curr_config']['noiserate']
+    metadata.Noise_Integration_Time = data_dict['curr_config']['adtime']
+    metadata.Noise_Decimation_Factor = data_dict['curr_config']['decfac']
     # metadata.Digitizer = 'NI6120'
     data_dict['measurement_metadata']['IQ_Sample_Rate'] = data_dict['curr_config']['sweeprate']
     data_dict['measurement_metadata']['Noise_Sample_Rate'] = data_dict['curr_config']['noiserate']

@@ -239,6 +239,19 @@ def _define_sweep_data_columns_legacy_gui(measurement_metadata, fsteps_syn = 1):
 
     return sweep_data_columns_list, sweep_data_columns
 
+
+def _define_sweep_data_columns_JPL(metadata):
+    fsteps = metadata['n_points']
+    sweep_data_columns_list = [
+        ("attenuation", np.float64),  # programmable attenuator atten in dB
+        ("power", np.float64),  # output power of frequency source in dB
+        ("frequencies", np.float64, (fsteps,)),  # sweep frequencies in Hz
+        ("s21", np.complex128, (fsteps,)),  # calibrated IQ mixer output in Volts
+        ("s21_calibration", np.complex128, (fsteps,))]  # IQ output with no input signal
+
+    sweep_data_columns = np.dtype(sweep_data_columns_list)
+    return sweep_data_columns_list, sweep_data_columns
+
 def _define_sweep_array(Sweep_Array, index,**field_names):
     #for field_name in self.sweep_data_columns.fields.keys():
     for field_name in field_names:
