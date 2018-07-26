@@ -261,7 +261,7 @@ def phase_fit(loop, env_var, Fit_Method = 'Multiple', Verbose = True, Show_Plot 
 
     if Show_Plot:
         total_removed, total_used_in_fit = _points_removed(z0,z5)
-        fig1 = plt.figure( facecolor = 'w',figsize = (10,10))
+        fig1 = plt.figure( facecolor = 'w',figsize = (9,9))
         ax = fig1.add_subplot(6,1,1)
         ax.set_title('Number of points used in fit = '+str(total_used_in_fit)+', Number of points removed = ' + str(total_removed) )
         #line = ax.plot(f1[~f5.mask], np.abs(z1[~z5.mask]),'g-', label = 'Used for Fit') #fails when no points are masked

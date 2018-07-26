@@ -13,16 +13,19 @@ def characterize_data(trace, filter):
     # determine the mean of the trace prior to the pulse
     trace.prepulse_mean = np.zeros(np.shape(trace.peak_times))
     for index, peak in enumerate(trace.peak_times):
-        trace.prepulse_mean[index] = np.mean(trace.trace_phase[index, :peak])
+        if peak < 20:
+            trace.prepulse_mean[index] = 0
+        else:
+            trace.prepulse_mean[index] = np.mean(trace.trace_phase[index, :peak - 10])
 
     # determine the rms value of the trace prior to the pulse
     trace.prepulse_rms = np.zeros(np.shape(trace.peak_times))
     for index, peak in enumerate(trace.peak_times):
-        if peak == 0:
+        if peak < 20:
             trace.prepulse_rms[index] = 0
         else:
             trace.prepulse_rms[index] = np.sqrt(np.mean(
-                trace.trace_phase[index, :peak]**2))
+                trace.trace_phase[index, :peak - 10]**2))
 
     # determine the minimum slope after the pulse peak
     trace.postpulse_min_slope = np.zeros(np.shape(trace.peak_times))

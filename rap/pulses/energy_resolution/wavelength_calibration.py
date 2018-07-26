@@ -68,7 +68,7 @@ def amplitude_fit(amplitudes, energies, n_bins=100, fit_type='gaussian',
     for index, prefix in enumerate(prefixes):
         # assume equal heights for the peaks
         amplitude = np.sum(amp_counts) * bin_width / len(prefixes)
-        params[prefix + 'amplitude'].set(value=amplitude)
+        params[prefix + 'amplitude'].set(value=amplitude, min=0)
         # space the Gaussians between max and min bins
         max_bin = np.max(amp_centers)
         min_bin = np.min(amp_centers)
@@ -171,7 +171,7 @@ def binned_energy_fit(amplitudes, energies, n_bins=100, fit_type='gaussian',
     for index, prefix in enumerate(prefixes):
         # assume equal heights for the peaks
         amplitude = np.sum(amp_counts) * bin_width / len(prefixes)
-        params[prefix + 'amplitude'].set(value=amplitude)
+        params[prefix + 'amplitude'].set(value=amplitude, min=0)
         # fix the centers at the given energies
         params[prefix + 'center'].set(value=energies[index], vary=False)
         # assume a typical R = 8 standard deviation
@@ -257,7 +257,7 @@ def energy_fit(amplitudes, energies, fit_type='gaussian', calibration='linear',
     for index, prefix in enumerate(prefixes):
         # assume equal heights for the peaks
         amplitude = len(amplitudes) / len(prefixes)
-        params[prefix + 'amplitude'].set(value=amplitude)
+        params[prefix + 'amplitude'].set(value=amplitude, min=0)
         # fix the centers at the given energies
         params[prefix + 'center'].set(value=energies[index], vary=False)
         # assume a typical R = 8 standard deviation

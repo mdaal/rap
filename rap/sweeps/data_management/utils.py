@@ -247,7 +247,7 @@ def _define_sweep_data_columns_JPL(metadata):
         ("power", np.float64),  # output power of frequency source in dB
         ("frequencies", np.float64, (fsteps,)),  # sweep frequencies in Hz
         ("s21", np.complex128, (fsteps,)),  # calibrated IQ mixer output in Volts
-        ("s21_calibration", np.complex128, (fsteps,))]  # IQ output with no input signal
+        ("s21_baseline", np.complex128, (fsteps,))]  # IQ output with no input signal
 
     sweep_data_columns = np.dtype(sweep_data_columns_list)
     return sweep_data_columns_list, sweep_data_columns

@@ -41,9 +41,10 @@ def rotate_I_and_Q(trace):
     amp_noise = (np.linalg.norm(rotated_noise, axis=1) - trace.radius) / trace.radius
 
     # remove any remaining baseline in the noise by subtracting the median
-    phase -= np.median(phase, axis=1)[:, np.newaxis]
+    ind = int(np.floor(len(phase[0, :]) / 5))
+    phase -= np.median(phase[:, :ind], axis=1)[:, np.newaxis]
     phase_noise -= np.median(phase_noise, axis=1)[:, np.newaxis]
-    amplitude -= np.median(amplitude, axis=1)[:, np.newaxis]
+    amplitude -= np.median(amplitude[:, :ind], axis=1)[:, np.newaxis]
     amp_noise -= np.median(amp_noise, axis=1)[:, np.newaxis]
 
     # save data in the trace object

@@ -99,6 +99,9 @@ ENV/
 .spyderproject
 .spyproject
 
+# Pycharm project settings
+.idea/
+
 # Rope project settings
 .ropeproject
 
@@ -109,4 +112,4 @@ ENV/
 .mypy_cache/
 
 # pytest
-.pytest_cashe/
+.pytest_cache/

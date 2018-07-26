@@ -21,9 +21,9 @@ def plot_IQ_trace(trace):
     ax1.set_xlabel(r"time [$\mu s$]")
 
     ax2 = plt.subplot2grid((4, 1), (2, 0), rowspan=2)
-    ax2.plot(np.real(trace.z), np.imag(trace.z))
     phi = np.linspace(0, 2 * np.pi, 100)
     ax2.plot(trace.radius * np.cos(phi), trace.radius * np.sin(phi))
+    ax2.plot(np.real(trace.z), np.imag(trace.z))
     ax2.plot(0, 0, '+')
     loop, = ax2.plot(trace.trace_I[0, :], trace.trace_Q[0, :], 'o', markersize=2)
     ax2.axis('equal')

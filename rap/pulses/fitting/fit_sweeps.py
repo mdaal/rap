@@ -15,14 +15,14 @@ def fit_sweeps(pulse, Show_Plot=False, Fit_Method="circle_and_phase", Verbose=Fa
     elif Fit_Method is None:
         # allow for fitting the sweep object manually but still update the
         # trace object
-        pass
+        pulse.trace.cable_delay = pulse.sweep.metadata.Electrical_Delay
     else:
         raise ValueError("Fit_Method keyword not valid")
 
     # update trace object with relevant values
     pulse.trace.radius = pulse.sweep.loop.r
     pulse.trace.center = pulse.sweep.loop.a + 1j * pulse.sweep.loop.b
-    pulse.trace.freq = pulse.sweep.loop.freq
-    pulse.trace.z = pulse.sweep.loop.z
+    pulse.trace.freq = pulse.sweep.loop.freq.copy()
+    pulse.trace.z = pulse.sweep.loop.z.copy()
     pulse.trace.Q = pulse.sweep.loop.Q
     pulse.trace.Qc = pulse.sweep.loop.Qc

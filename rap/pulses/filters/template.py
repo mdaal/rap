@@ -232,8 +232,9 @@ class Template(object):
         '''
         # add all the data together
         self.template = np.sum(self.data, axis=1)
-        # remove any small baseline error
-        self.template -= np.median(self.template, axis=1)[:, np.newaxis]
+        # remove any small baseline error from front of pulses
+        ind = int(np.floor(len(self.template[0, :]) / 5))
+        self.template -= np.median(self.template[:, :ind], axis=1)[:, np.newaxis]
         # normalize phase pulse height to 1
         self.template /= np.abs(np.min(self.template[0]))
 
