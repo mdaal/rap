@@ -17,7 +17,15 @@ To Do
 + Implement more fit options
 + Implement fit uncertainty/error 
 + Setup logging and exception handling
-
++ Make Sweep_Array an object to accomodate big data sets
++ Change phase fit success from the method that gave the minimum function value to the method that gave minimum function value  AND was a successful fit.
++ Add a calibration folder on the top level (with sweeps, and pulses folder)... it might be a class...  
++ Store calibrations as functions in a dict in the calibration folder. each object references a function to apply its calibration
++ Calibrations to include alplifiers, attenuattors, cables, mixers etc. Should include a temperature/noise temperature declaration. 
++ Calibrations can also include device/resonator specific information like impedance, widths, and Eeff, etc.. 
++ calibrations will be have  sequential structure that captures the order in which signals propagate through read out  system elements (e.g. first through LNA then RT amp) 
++ analysies will be in the form of piplines. not sure where to put this code yet. 
++ piplines will also have a sequencial structure which captures the  order  that the  data is processed (eg trim loop then  circle fit then phase fit), and can incorporate 3rd party analysis packages such as 'scraps'
 
 
 
