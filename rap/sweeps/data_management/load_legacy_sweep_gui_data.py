@@ -6,26 +6,62 @@ import datetime
 import os
 import warnings
 
-def load_legacy_sweep_gui_data(metadata, gui_data_path):
+# + Updated rap_demonstration.ipynb:  
+# - to used importlib.reload instead of reload
+# + Updated load_touchstone.py to  save  unicode strings for metadata.Time_Created, and metadata.Run instead of metadata.Run (which causes save_hf5() not to fail to parse the date created for the table name)
+# +updated phase_fit to place commas in the display of the Q and f0
+print("load_legacy_sweep_gui_data level init")
+def load_legacy_sweep_gui_data(metadata, gui_data_path, which_copy = 'first'):
     data_dir = gui_data_path
 
 
-    ### Find Latest sweep_config_xxxxx.mat file in data_dir
-    file_list = os.listdir(data_dir)
-    lastest_sweep_config_modification_time = 0.0
-    for file in file_list:
-        if file.startswith('sweep_config'):
-            parts = file.replace('.', '_').split('_')
-            if len(parts) == 3:
-                config_file = data_dir + os.sep + file
-                break
-            elif len(parts) == 4:
-                lastest_sweep_config_modification_time = parts[2]
-                if parts[2] >= lastest_sweep_config_modification_time:
-                    lastest_sweep_config_modification_time = parts[2]
-                    config_file = data_dir + os.sep + file
+    ### Find Latest sweep_config_xxxxx.mat and sweep_data_xxxxx.mat file in data_dir
+    def get_latest_data_file(prefix, which_copy = which_copy ):
+        '''
+        Returns a list of files in the directory 'data_dir' which begin with 'prefix'.
+        The contents of the list is determined by the  value of 'which_copy'
+        which_copy= 'first'
+                    'last'
+                    'all'
+                    'yyyymmddHHMMSS' (a specific date string)
 
-    config  = scipy.io.loadmat(config_file)
+        '''
+        file_list = os.listdir(data_dir)
+        modification_time = 0
+        data_file = []
+        found_file = False
+        
+        for file in file_list:
+            if file.startswith(prefix):
+                parts = file.replace('.', '_').split('_')
+
+                data_file_failsafe = data_dir + os.sep + file #use this data_file is  last is actually data_file.mat
+                
+                if (len(parts) == 3) and (which_copy == 'first'): #data_file is data_file.mat
+                    # only want this  when there is no date string, i.e. modification_time = 0
+                    data_file.append(data_dir + os.sep + file)
+                    found_file = True
+
+                elif (len(parts) == 4) and (which_copy == parts[2]): #data_file is data_file_xxxxx.mat where xxxxx is the date as a string passed to which_copy
+                    data_file.append(data_dir + os.sep + file)
+                    found_file = True
+
+                elif (len(parts) == 4) and (which_copy == 'last'): #data_file is data_file_xxxxx.mat where xxxxx is the latest date
+                    print(which_copy, 'right here')
+                    if int(parts[2]) >= modification_time:
+                        modification_time = parts[2]
+                        data_file.append(data_dir + os.sep + file)
+                        found_file = True
+
+                elif which_copy == 'all':
+                        data_file.append(data_dir + os.sep + file)
+                        found_file = True
+
+        if found_file == False:
+            data_file.append(data_file_failsafe)
+            if (which_copy is not 'first') and (which_copy is not 'last'):
+                warnings.warn('The specified copy of {0}, {0}_{1}.mat, was not found. Using {2}.'.format(prefix,which_copy,data_file),UserWarning)
+        return  data_file
 
     data_dict= dict()
     data_dict['curr_config'] = dict()
@@ -71,7 +107,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 
     def _unpack_data_structure(tags, receiving_dict, struct_to_be_unpacked):
         ''' takes data specfied in tag from struct_to_be_unpacked and adds it to receiving_dict in the format specificed in tags
-        the  placemente of the data within receiving_dict is also specificed by tags, which is a list od tuples
+        the  placement of the data within receiving_dict is also specificed by tags, which is a list od tuples
         [(fieldname_in_struct_to_be_unpacked, destination_key_in_receiving_dict, format_in_receiving_dict, [optional  subfieldname_in_struct_to_be_unpacked]),...]
         '''
         for t in tags:
@@ -90,6 +126,23 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
                 #the case that the field does not exist or that its in an unexpected format
                 #print('Field named {0}{1} is not found. Setting value to None'.format(t[0], (':'+t[3]) if len(t) > 3 else '')) # this usesScandata nomenclature
             #     print('Field named {0} is not found.'.format(t[1])) # this uses metadata nomenclature
+    
+
+
+    config_files = get_latest_data_file('sweep_config', which_copy) 
+    sweep_data_files = get_latest_data_file('sweep_data', which_copy) #Contains datadata for Ben's fit code, i.e. zeropt and zerostd
+    
+    print('config_fileds and sweep_data_files', config_files,sweep_data_files)
+    
+    sweep_data  = scipy.io.loadmat(sweep_data_files[0])
+    sweep_data_temp_list = list(np.floor(np.array(sweep_data['IQ_data'][0]['temprange'][0][0,:])*1000)/1000)
+    sweep_data_atten_list = list(np.array(sweep_data['IQ_data'][0]['attenrange'][0][0,:],dtype = np.int)) #attenuator values must be ints
+    print('sweep data temp list', sweep_data_temp_list)
+    print('sweep data atten list', sweep_data_atten_list)
+
+   
+    config  = scipy.io.loadmat(config_files[0])
+
     _unpack_data_structure(config_tags, data_dict, config)
 
 
@@ -116,6 +169,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
     output_atten_value_array = np.arange(data_dict['curr_config']['startatten'],data_dict['curr_config']['stopatten']+data_dict['curr_config']['stepatten'],data_dict['curr_config']['stepatten'])
 
     ### Construct list of temperature value settings
+    print('curr_config start stop step',data_dict['curr_config']['starttemp'],data_dict['curr_config']['stoptemp']+data_dict['curr_config']['steptemp'],data_dict['curr_config']['steptemp'])
     temperature_value_array = np.arange(data_dict['curr_config']['starttemp'],data_dict['curr_config']['stoptemp']+data_dict['curr_config']['steptemp'],data_dict['curr_config']['steptemp'])
 
     ### Construct list of resonant frequency groups in the form [(group1res1, group1res2),(group2res1, group2res2), ...]
@@ -123,7 +177,10 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 
     ### might want to sort the list of suffixes!
     spectra_filename_suffixes = ['{temp:.0f}-{resonator_group_num}-{start_atten:.0f}.mat'.format(temp = t, resonator_group_num = rg, start_atten = sa) for t in temperature_value_array for  rg in range(1,len(resonator_group_list)+1) for  sa in output_atten_value_array] # note that '{start_atten:.0f}' means don't include a decimal point
+    #spectra_filename_suffixes = ['{temp}-{resonator_group_num}-{start_atten}.mat'.format(temp = str(t), resonator_group_num = rg, start_atten = int(sa)) for t in temperature_value_array for  rg in range(1,len(resonator_group_list)+1) for  sa in output_atten_value_array] # note that '{start_atten:.0f}' means don't include a decimal point
     spectra_filename_prefixes = ['spec', 'spec_offres'] if data_dict['measurement_metadata']['Measure_Off_Res_Noise'] else ['spec']
+    print('curr_config temp value array', temperature_value_array)
+    print('curr_config atten value array', output_atten_value_array)
 
     missing_spectra_filename = list()
 
@@ -149,17 +206,19 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
     if data_dict['measurement_metadata']['Measure_On_Res_CPSD'] is False:
         spectra_tags = [tag for tag in spectra_tags  if tag[0] is not  'cspec']
 
-
+        
     i=0
     on_res = dict()
     off_res = dict()
     dt_duration = datetime.timedelta()
     unpack_dict = {'spec': (spectra_tags, on_res), 'spec_offres': ([tag for tag in spectra_tags  if tag[0] is not  'cspec' if tag[0] is not 'traj1' if tag[0] is not 'traj2'], off_res)}
-
+    
     ### loop through specXX-YY-ZZ.mat and spec_offresXX-YY-ZZ.mat files, pullling their data and filling Sweep_Array
+    print('spectra_filename_suffixes',spectra_filename_suffixes)
     for filename_suffix in spectra_filename_suffixes:
         for filename_prefix in spectra_filename_prefixes:
             spectra_filename = data_dir + os.sep + filename_prefix + filename_suffix
+
             if os.path.isfile(spectra_filename):
                 spectra  = scipy.io.loadmat(spectra_filename)
                 _unpack_data_structure(unpack_dict[filename_prefix][0],unpack_dict[filename_prefix][1],  spectra)
@@ -168,7 +227,7 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
                 continue
         if filename_prefix + filename_suffix in missing_spectra_filename:
             continue
-        temp_group_atten_list = filename_suffix.replace('.mat', '').split('-')
+        temp_group_atten_list = filename_suffix.replace('.mat', '').split('-') #note: temp_group_atten_list is a list of strings
 
         ### get time/date the on_res file was created and then store it as a datetime object.
         on_res['Time_Created'] = on_res['Time_Created'][on_res['Time_Created'].find('Created on: ')+len('Created on: '):]
@@ -178,7 +237,26 @@ def load_legacy_sweep_gui_data(metadata, gui_data_path):
 
         ### find max time interval between on_res file creation and measurement start time, to be used to compute total measurement duration
         dt_duration = dt_time_created - dt_start if dt_time_created - dt_start > dt_duration else dt_duration
+        print('temp_group_atten_list',temp_group_atten_list)
+        try: 
+            tmp = sweep_data_temp_list.index(np.float(temp_group_atten_list[0]))
+        except: 
+            print('tmp not found in datafiles')
 
+        try: 
+            grp = np.int(temp_group_atten_list[1])*2 + 1
+        except: 
+            print('grp not found in datafiles')
+
+        try:
+            tmp = sweep_data_temp_list.index(np.float(temp_group_atten_list[0]))
+            grp = np.int(temp_group_atten_list[1])*2 + 1
+            atn = sweep_data_atten_list.index(np.int(temp_group_atten_list[2]))  #attenuator values must be ints
+            print(tmp,atn,grp)
+        except:
+            print('atm not found in datafiles')
+        #sweep_data['IQ_data'][0]['temps'][0][0,tmp]['attens'][0,1]['res'][0,1]['zeropt'][0,0] 
+        
         _define_sweep_array(Sweep_Array, i,
                                 Temperature = np.float(temp_group_atten_list[0]) * 0.001,
                                 S21_Syn = on_res['traj1']['z'].flatten(),

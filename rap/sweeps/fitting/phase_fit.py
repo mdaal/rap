@@ -307,8 +307,8 @@ def phase_fit(loop, env_var, Fit_Method = 'Multiple', Verbose = True, Show_Plot 
         line = ax.plot(z5[ma.getmaskarray(z5)].data.real, z5[ma.getmaskarray(z5)].data.imag,'r.', alpha = 0.2,label = 'Excluded Data')
         ax.legend(loc = 'center left', bbox_to_anchor=(1.01, 0.5), fontsize=10, scatterpoints =1, numpoints = 1, labelspacing = .1)#,numpoints)
 
-        text = ('$*Resonator Properties*$\n' + '$Q =$ ' + '{0:.2f}'.format(loop.Q) +'\nf$_0$ = ' + '{0:.6f}'.format(loop.fr/1e6)
-            +  ' MHz\n$Q_c$ = ' + '{0:.2f}'.format(loop.Qc) + '\n$Q_i$ = ' + '{0:.2f}'.format(loop.Qi) + '\n|S$_{21}$|$_{min}$ = '
+        text = ('$*Resonator Properties*$\n' + '$Q =$ ' + '{0:,.2f}'.format(loop.Q) +'\nf$_0$ = ' + '{0:,.6f}'.format(loop.fr/1e6)
+            +  ' MHz\n$Q_c$ = ' + '{0:,.2f}'.format(loop.Qc) + '\n$Q_i$ = ' + '{0:,.2f}'.format(loop.Qi) + '\n|S$_{21}$|$_{min}$ = '
             + '{0:.3f}'.format(loop.depth_est) + ' dB' + '\nBW$_{FWHM}$ = ' + '{0:.3f}'.format(loop.FWHM/1e3) +  ' kHz'
             + '\n$\chi^{2}$ = ' + '{0:.4f}'.format(loop.chisquare) + '\n$\phi$ = ' + '{0:.3f}'.format(loop.phi*180/np.pi) +' deg' + '\n' + r'$\theta$ = '
             + '{0:.3f}'.format(loop.theta*180/np.pi) +' deg' +'\n$- $'+loop.phase_fit_method

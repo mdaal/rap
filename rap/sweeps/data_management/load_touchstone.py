@@ -51,10 +51,14 @@ def load_touchstone(metadata, filename):
                 if line == b'': # End of file is reached
                     break
                 elif line.startswith(b'! Data File Written:'): # Save as Metadata
-                    metadata.Time_Created = str(line.split(b'! Data File Written:')[1].strip())
+                    metadata.Time_Created = line.split(b'! Data File Written:')[1].strip().decode("utf-8", "backslashreplace") 
+                    # Note: line.split(b'! Data File Written:')[1].strip() is a bytes object, e.g. b'...',=.  
+                    # We want a unicode string, so we decode the bytes object using the encoding "utf-8". If a character that is not 
+                    # decodable in "utf-8" is encountered, the "backslashreplace" option inserts a \xNN escape sequence. 
+                    # alternatively we cound use the "ignore" to just leave the character out of the Unicode result.
                     tmp.write(line + b'\n')
                 elif line.startswith(b'! From Project:') | line.startswith(b'! From Emgraph Data:'): # Save as Metadata
-                    metadata.Run = str(line.split(b':')[1].strip())
+                    metadata.Run = line.split(b':')[1].strip().decode("utf-8", "backslashreplace")
                     #self.metadata.IS_Sonnet_Simulation = True
                     tmp.write(line + b'\n')
                 elif line[0] == '#' or (type(line) is not str and line[0] == 35):
